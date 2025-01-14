@@ -2,7 +2,7 @@ import {DexInterface} from "./dex.interface";
 import {MiraDex} from "./mira-dex/mira_dex";
 
 import dotenv from 'dotenv';
-import {AssetId, BN, Provider, TransactionResult, WalletUnlocked} from "fuels";
+import {AssetId, BN, Provider, sleep, TransactionResult, WalletUnlocked} from "fuels";
 import {retry} from "../utils/call_helper";
 import {TokenInfo} from "./model";
 import {getVerifiedAssets} from "../fuel/functions";
@@ -24,8 +24,8 @@ export class DexClient {
     }
 
     async calculateSwapAmount(assetIn: string, assetOut: string, amount: number): Promise<number> {
-        const assetInId = { bits: assetIn };
-        const assetOutId = { bits: assetOut };
+        const assetInId = {bits: assetIn};
+        const assetOutId = {bits: assetOut};
 
         const tokenInfoOut = await this.getTokenInfo(assetOut);
         const decimalsOut = tokenInfoOut.decimals;
@@ -36,6 +36,11 @@ export class DexClient {
         const maxAmount = result.maxAmount.toNumber();
 
         return maxAmount / Math.pow(10, decimalsOut);
+    }
+
+    async getBalance(asset: string): Promise<number> {
+        const amountBN = await this.wallet.getBalance(asset);
+        return await this.getTokenAmount(asset, amountBN);
     }
 
     async getBalances(): Promise<Array<[string, string]>> {
@@ -59,10 +64,10 @@ export class DexClient {
         return balancePairs;
     }
 
-    async getTokenInfo(asset: string) : Promise<TokenInfo> {
+    async getTokenInfo(asset: string): Promise<TokenInfo> {
         for (const dex of this.dexArray) {
             try {
-                const assetId = { bits: asset };
+                const assetId = {bits: asset};
                 return await dex.getTokenInfo(assetId);
 
             } catch (error) {
@@ -84,18 +89,27 @@ export class DexClient {
         throw new Error(`Token information not found for asset ID: ${asset}`);
     }
 
-    async swap(assetIn: string, assetOut: string, amount: number): Promise<TransactionResult> {
-        const assetInId = { bits: assetIn };
-        const assetOutId = { bits: assetOut };
+    async swap(assetIn: string, assetOut: string, amount: number): Promise<boolean> {
+        const assetInId = {bits: assetIn};
+        const assetOutId = {bits: assetOut};
 
         const amountBN = await this.getTokenAmountBN(assetIn, amount);
 
-        const { bestDex } = await this.getBestRate(assetInId, assetOutId, amountBN);
+        const {bestDex} = await this.getBestRate(assetInId, assetOutId, amountBN);
 
+        const balanceBefore = await this.wallet.getBalance(assetOut);
         try {
-            return await bestDex.swap(assetInId, assetOutId, amountBN)
+            const result = await bestDex.swap(assetInId, assetOutId, amountBN)
+            return result != null
         } catch (error) {
-            throw new Error(`Swap failed: ${error.message}`);
+            await sleep(3000)
+            const balanceAfter = await this.wallet.getBalance(assetOut);
+            //Safe check to prevent Error in Success result
+            if (balanceAfter != null && balanceBefore != null && balanceAfter != balanceBefore) {
+                return true
+            } else {
+                throw new Error(`Swap failed: ${error.message}`);
+            }
         }
     }
 
@@ -107,7 +121,7 @@ export class DexClient {
         const dexResults = await Promise.all(
             this.dexArray.map(async (dex) => {
                 const swapAmount = await retry(async () => dex.getSwapAmount(assetIn, assetOut, amount));
-                return { dex, swapAmount: swapAmount };
+                return {dex, swapAmount: swapAmount};
             })
         );
 
@@ -121,6 +135,11 @@ export class DexClient {
         };
     }
 
+    private async getTokenAmount(asset: string, amount: BN): Promise<number> {
+        const tokenInfo = await this.getTokenInfo(asset);
+        return parseFloat(amount.toString()) / Math.pow(10, tokenInfo.decimals);
+    }
+
     private async getTokenAmountBN(asset: string, amount: number): Promise<BN> {
         const tokenInfo = await retry(async () => this.getTokenInfo(asset));
         const decimals = tokenInfo.decimals;
@@ -129,7 +148,7 @@ export class DexClient {
     }
 }
 
-export async function buildDexClientFor(walletPK: string) : Promise<DexClient> {
+export async function buildDexClientFor(walletPK: string): Promise<DexClient> {
     const provider = await Provider.create(rpcUrl);
     const wallet = new WalletUnlocked(walletPK, provider);
 

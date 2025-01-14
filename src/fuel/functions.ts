@@ -12,7 +12,7 @@ export async function futureDeadline(provider: Provider) {
 
 export async function getVerifiedAssets(): Promise<AssetVerified[]> {
     try {
-        const response =  await retry(async () =>  axios.get(VERIFIED_ASSETS_URL));
+        const response = await retry(async () => axios.get(VERIFIED_ASSETS_URL));
         const assets: any[] = response.data;
 
         // Маппинг в структуру AssetVerified

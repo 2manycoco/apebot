@@ -3,6 +3,7 @@ import {DexInterface} from "../dex.interface";
 import {buildPoolId, MiraAmm, ReadonlyMiraAmm} from "mira-dex-ts";
 import {futureDeadline} from "../../fuel/functions";
 import {TokenInfo} from "../model";
+import {retry} from "../../utils/call_helper";
 
 
 export class MiraDex implements DexInterface {
@@ -53,7 +54,7 @@ export class MiraDex implements DexInterface {
         const amountOutMin = await this.getSwapAmount(assetIn, assetOut, amount);
         const deadline = await futureDeadline(this.provider);
 
-        const poolId  = buildPoolId(assetIn, assetOut, false);
+        const poolId = buildPoolId(assetIn, assetOut, false);
         const txParams = {
             gasLimit: 999999,
             maxFee: 999999,
@@ -67,6 +68,8 @@ export class MiraDex implements DexInterface {
         await this.wallet.fund(txRequest, txCost);
 
         const tx = await this.wallet.sendTransaction(txRequest);
-        return await tx.waitForResult();
+        return await retry(
+            async () => tx.waitForResult()
+        );
     }
 }

@@ -3,12 +3,9 @@ import dotenv from "dotenv";
 import {CONTRACTS} from "../fuel/contracts";
 import * as path from "node:path";
 import {retry, setupGlobalHttpClient} from "../utils/call_helper";
-import https from "node:https";
-import axios from "axios";
-import axiosRetry from "axios-retry";
 
 dotenv.config();
-dotenv.config({ path: path.resolve(__dirname, "../../.env.secret") });
+dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
 const walletPK = process.env.WALLET_PK;
 
@@ -25,11 +22,22 @@ async function testDexClient() {
 
 
         console.log("Building DexClient...");
-        const dexClient = await retry(async () => buildDexClientFor(walletPK));
+        const dexClient = await retry(
+            async () => buildDexClientFor(walletPK),
+            10
+        );
+
+        console.log("Testing getBalance...");
+        const balance = await dexClient.getBalance(assetIn);
+        if (balance == null) {
+            console.log("Testing getBalances Failed");
+            return
+        }
+        console.log(`Balance: ${balance}`);
 
         console.log("Testing getBalances...");
         const balances = await dexClient.getBalances();
-        if(balances == null){
+        if (balances == null) {
             console.log("Testing getBalances Failed");
             return
         }
@@ -40,7 +48,7 @@ async function testDexClient() {
 
         console.log("Testing getTokenInfo...");
         const tokenInfo = await dexClient.getTokenInfo(assetIn);
-        if(tokenInfo == null){
+        if (tokenInfo == null) {
             console.log("Testing getTokenInfo Failed");
             return
         }
@@ -48,7 +56,7 @@ async function testDexClient() {
 
         console.log("Testing calculateSwapAmount...");
         const calculatedAmount = await dexClient.calculateSwapAmount(assetIn, assetOut, swapAmount);
-        if(calculatedAmount == null){
+        if (calculatedAmount == null) {
             console.log("Testing calculateSwapAmount Failed");
             return
         }
@@ -59,7 +67,7 @@ async function testDexClient() {
 
         console.log("Testing swap...");
         const swapResult = await dexClient.swap(assetIn, assetOut, swapAmount);
-        if(swapResult == null){
+        if (swapResult == null) {
             console.log("Testing swap Failed");
             return
         }
