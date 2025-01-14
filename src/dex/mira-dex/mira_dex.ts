@@ -1,6 +1,6 @@
 import {AssetId, BN, Provider, TransactionResult, WalletUnlocked} from "fuels";
 import {DexInterface} from "../dex.interface";
-import {buildPoolId, MiraAmm, PoolId, ReadonlyMiraAmm} from "mira-dex-ts";
+import {buildPoolId, MiraAmm, ReadonlyMiraAmm} from "mira-dex-ts";
 import {futureDeadline} from "../../fuel/functions";
 import {TokenInfo} from "../model";
 
@@ -67,7 +67,6 @@ export class MiraDex implements DexInterface {
         await this.wallet.fund(txRequest, txCost);
 
         const tx = await this.wallet.sendTransaction(txRequest);
-        const result = await tx.waitForResult();
-        return result;
+        return await tx.waitForResult();
     }
 }

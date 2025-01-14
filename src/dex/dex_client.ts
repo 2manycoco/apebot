@@ -2,7 +2,7 @@ import {DexInterface} from "./dex.interface";
 import {MiraDex} from "./mira-dex/mira_dex";
 
 import dotenv from 'dotenv';
-import {AssetId, BN, Contract, Provider, TransactionResult, WalletUnlocked} from "fuels";
+import {AssetId, BN, Provider, TransactionResult, WalletUnlocked} from "fuels";
 import {retry} from "../utils/call_helper";
 import {TokenInfo} from "./model";
 import {getVerifiedAssets} from "../fuel/functions";
@@ -93,13 +93,8 @@ export class DexClient {
         const { bestDex } = await this.getBestRate(assetInId, assetOutId, amountBN);
 
         try {
-            const txResult = await bestDex.swap(assetInId, assetOutId, amountBN);
-
-            console.log("Swap successful!");
-            return txResult
-
+            return await bestDex.swap(assetInId, assetOutId, amountBN)
         } catch (error) {
-            console.error("Swap failed:", error.message);
             throw new Error(`Swap failed: ${error.message}`);
         }
     }
