@@ -19,7 +19,7 @@ async function testDexClient() {
 
         const assetIn = CONTRACTS.ASSET_ETH.bits;
         const assetOut = CONTRACTS.ASSET_FUEL.bits;
-        const swapAmount = 0.000557768;
+        const swapAmount = 0.001;
 
         startVerifiedAssetsWorker()
 
