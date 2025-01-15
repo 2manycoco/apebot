@@ -1,41 +1,59 @@
 import {AssetId, BN, Provider, TransactionResult, WalletUnlocked} from "fuels";
 import {DexInterface} from "../dex.interface";
-import {buildPoolId, MiraAmm, ReadonlyMiraAmm} from "mira-dex-ts";
+import {buildPoolId, getLPAssetId, MiraAmm, ReadonlyMiraAmm} from "mira-dex-ts";
 import {futureDeadline} from "../../fuel/functions";
 import {TokenInfo} from "../model";
 import {retry} from "../../utils/call_helper";
+import {CONTRACTS} from "../../fuel/asset/contracts";
 
+const MIRA_POOL_TOKEN_SYMBOL = "MIRA-LP"
 
 export class MiraDex implements DexInterface {
     private wallet: WalletUnlocked;
     private provider: Provider;
     private miraAmm: MiraAmm;
     private readonlyMiraAmm: ReadonlyMiraAmm;
+    private contractId: string
 
     constructor(wallet: WalletUnlocked, provider: Provider, contractId: string) {
         this.wallet = wallet;
         this.provider = provider;
         this.miraAmm = new MiraAmm(wallet, contractId);
         this.readonlyMiraAmm = new ReadonlyMiraAmm(provider, contractId);
+        this.contractId = contractId;
     }
 
     async getTokenInfo(assetId: AssetId): Promise<TokenInfo> {
-        const assetInfo = await this.readonlyMiraAmm.lpAssetInfo(assetId);
+        const poolId = buildPoolId(CONTRACTS.ASSET_ETH, assetId, false);
+        const lpAssetId = getLPAssetId(this.contractId, poolId);
+        const assetInfo = await retry(
+            async () => await this.readonlyMiraAmm.lpAssetInfo(lpAssetId)
+        );
 
         if (!assetInfo) {
             throw new Error(`Token info not found for asset ID: ${assetId.bits}`);
         }
 
+        // Handle 'MIRA-LP' case
+        let symbol = assetInfo.symbol || "Unknown";
+        if (symbol === MIRA_POOL_TOKEN_SYMBOL) {
+            // Extract the first part of the name (before the '-') using regex
+            const match = assetInfo.name.match(/^([^-]+)-/);
+            symbol = match ? match[1].trim() : assetInfo.name;
+        }
+
         return {
             name: assetInfo.name || "Unknown",
-            symbol: assetInfo.symbol || "Unknown",
+            symbol,
             decimals: assetInfo.decimals || 0,
         };
     }
 
     async getSwapAmount(assetIn: AssetId, assetOut: AssetId, amount: BN): Promise<BN> {
         const poolId = buildPoolId(assetIn, assetOut, false);
-        const result = await this.readonlyMiraAmm.previewSwapExactInput(assetIn, amount, [poolId]);
+        const result = await retry(
+            async () => this.readonlyMiraAmm.previewSwapExactInput(assetIn, amount, [poolId])
+        );
 
         if (!result) {
             throw new Error(`Swap amount request failed`);

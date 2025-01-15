@@ -2,10 +2,21 @@ import {DexInterface} from "./dex.interface";
 import {MiraDex} from "./mira-dex/mira_dex";
 
 import dotenv from 'dotenv';
-import {AssetId, BN, Provider, sleep, TransactionResult, WalletUnlocked} from "fuels";
+import {
+    Asset,
+    AssetId,
+    assets,
+    BN,
+    Contract,
+    getAssetFuel,
+    Provider,
+    sleep,
+    TransactionResult,
+    WalletUnlocked
+} from "fuels";
 import {retry} from "../utils/call_helper";
 import {TokenInfo} from "./model";
-import {getVerifiedAssets} from "../fuel/functions";
+import {getVerifiedAssets} from "../fuel/asset/verified_assets_provider";
 
 dotenv.config();
 
@@ -65,16 +76,6 @@ export class DexClient {
     }
 
     async getTokenInfo(asset: string): Promise<TokenInfo> {
-        for (const dex of this.dexArray) {
-            try {
-                const assetId = {bits: asset};
-                return await dex.getTokenInfo(assetId);
-
-            } catch (error) {
-                console.info(`Failed to get token information from DEX: ${error.message}`);
-            }
-        }
-
         const verifiedAssets = await getVerifiedAssets();
         const matchedAsset = verifiedAssets.find((verified) => verified.assetId === asset);
 
@@ -84,6 +85,17 @@ export class DexClient {
                 symbol: matchedAsset.symbol,
                 decimals: matchedAsset.decimals,
             };
+        }
+
+
+        for (const dex of this.dexArray) {
+            try {
+                const assetId = {bits: asset};
+                return await dex.getTokenInfo(assetId);
+
+            } catch (error) {
+                console.info(`Failed to get token information from DEX: ${error.message}`);
+            }
         }
 
         throw new Error(`Token information not found for asset ID: ${asset}`);
@@ -102,10 +114,9 @@ export class DexClient {
             const result = await bestDex.swap(assetInId, assetOutId, amountBN)
             return result != null
         } catch (error) {
-            await sleep(3000)
             const balanceAfter = await this.wallet.getBalance(assetOut);
             //Safe check to prevent Error in Success result
-            if (balanceAfter != null && balanceBefore != null && balanceAfter != balanceBefore) {
+            if (balanceAfter != null && balanceBefore != null && !balanceAfter.eq(balanceBefore)) {
                 return true
             } else {
                 throw new Error(`Swap failed: ${error.message}`);
