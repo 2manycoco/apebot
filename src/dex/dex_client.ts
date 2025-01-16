@@ -1,37 +1,24 @@
 import {DexInterface} from "./dex.interface";
 import {MiraDex} from "./mira-dex/mira_dex";
 
-import dotenv from 'dotenv';
 import {
-    Asset,
     AssetId,
-    assets,
     BN,
-    Contract,
-    getAssetFuel,
     Provider,
-    sleep,
-    TransactionResult,
     WalletUnlocked
 } from "fuels";
+
 import {retry} from "../utils/call_helper";
 import {TokenInfo} from "./model";
 import {getVerifiedAssets} from "../fuel/asset/verified_assets_provider";
 
-dotenv.config();
-
-const rpcUrl = process.env.RPC_URL;
-const contractId = process.env.CONTRACT_ID;
-
 export class DexClient {
-    private provider: Provider
     private wallet: WalletUnlocked
     private dexArray: DexInterface[] = [];
 
-    constructor(provider: Provider, wallet: WalletUnlocked, contractId: string) {
-        this.provider = provider;
+    constructor(provider: Provider, wallet: WalletUnlocked) {
         this.wallet = wallet;
-        this.dexArray.push(new MiraDex(wallet, provider, contractId));
+        this.dexArray.push(new MiraDex(provider, wallet));
     }
 
     async calculateSwapAmount(assetIn: string, assetOut: string, amount: number): Promise<number> {
@@ -157,11 +144,4 @@ export class DexClient {
 
         return new BN(amount * Math.pow(10, decimals));
     }
-}
-
-export async function buildDexClientFor(walletPK: string): Promise<DexClient> {
-    const provider = await Provider.create(rpcUrl);
-    const wallet = new WalletUnlocked(walletPK, provider);
-
-    return new DexClient(provider, wallet, contractId)
 }

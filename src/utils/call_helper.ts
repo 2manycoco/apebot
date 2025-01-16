@@ -1,3 +1,4 @@
+import http from 'node:http';
 import https from "node:https";
 import axios from "axios";
 import axiosRetry from "axios-retry";
@@ -8,8 +9,18 @@ export function setupGlobalHttpClient() {
         keepAlive: true,
         timeout: timeout,
     });
+
+    const httpAgent = new http.Agent({
+        keepAlive: true
+    });
+    const httpsAgent = new https.Agent({
+        keepAlive: true
+    });
+
+
     axios.defaults.timeout = 20000;
-    https.globalAgent = timeout
+    http.globalAgent = httpAgent
+    https.globalAgent = httpsAgent
     axios.defaults.httpAgent = agent;
     axios.defaults.httpsAgent = agent;
     axiosRetry(axios, {retries: 7, retryDelay: axiosRetry.exponentialDelay});

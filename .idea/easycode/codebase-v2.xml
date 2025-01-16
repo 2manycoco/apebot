@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="com.obiscr.chatgpt.settings.EasyCodeState">
+    <option name="projectFiles" value="$PROJECT_DIR$/src/bot/actions.ts;C:/work/projects/apebot/src/bot/bot.ts;C:/work/projects/apebot/src/bot/user_session.ts;C:/work/projects/apebot/src/database/entities.ts;C:/work/projects/apebot/src/database/index.ts;C:/work/projects/apebot/src/database/user_data_storage.ts;C:/work/projects/apebot/src/dex/mira-dex/mira_dex.ts;C:/work/projects/apebot/src/dex/dex.interface.ts;C:/work/projects/apebot/src/dex/dex_client.ts;C:/work/projects/apebot/src/dex/model.ts;C:/work/projects/apebot/src/dex/tests.ts;C:/work/projects/apebot/src/fuel/asset/contracts.ts;C:/work/projects/apebot/src/fuel/asset/verified_assets_provider.ts;C:/work/projects/apebot/src/fuel/functions.ts;C:/work/projects/apebot/src/fuel/model.ts;C:/work/projects/apebot/src/utils/call_helper.ts;C:/work/projects/apebot/src/utils/logger.ts;C:/work/projects/apebot/src/main.ts;C:/work/projects/apebot/src/package-lock.json;C:/work/projects/apebot/package-lock.json;C:/work/projects/apebot/package.json" />
+  </component>
+</project>

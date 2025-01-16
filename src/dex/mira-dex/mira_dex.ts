@@ -5,27 +5,29 @@ import {futureDeadline} from "../../fuel/functions";
 import {TokenInfo} from "../model";
 import {retry} from "../../utils/call_helper";
 import {CONTRACTS} from "../../fuel/asset/contracts";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const MIRA_POOL_TOKEN_SYMBOL = "MIRA-LP"
+const contractId = process.env.CONTRACT_ID;
 
 export class MiraDex implements DexInterface {
-    private wallet: WalletUnlocked;
-    private provider: Provider;
-    private miraAmm: MiraAmm;
-    private readonlyMiraAmm: ReadonlyMiraAmm;
-    private contractId: string
+    private readonly wallet: WalletUnlocked;
+    private readonly provider: Provider;
+    private readonly miraAmm: MiraAmm;
+    private readonly readonlyMiraAmm: ReadonlyMiraAmm;
 
-    constructor(wallet: WalletUnlocked, provider: Provider, contractId: string) {
+    constructor(provider: Provider, wallet: WalletUnlocked) {
         this.wallet = wallet;
         this.provider = provider;
         this.miraAmm = new MiraAmm(wallet, contractId);
         this.readonlyMiraAmm = new ReadonlyMiraAmm(provider, contractId);
-        this.contractId = contractId;
     }
 
     async getTokenInfo(assetId: AssetId): Promise<TokenInfo> {
         const poolId = buildPoolId(CONTRACTS.ASSET_ETH, assetId, false);
-        const lpAssetId = getLPAssetId(this.contractId, poolId);
+        const lpAssetId = getLPAssetId(contractId, poolId);
         const assetInfo = await retry(
             async () => await this.readonlyMiraAmm.lpAssetInfo(lpAssetId)
         );
