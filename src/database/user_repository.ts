@@ -2,6 +2,7 @@ import {User} from "./entities";
 import {Repository} from "typeorm";
 import {AppDataSource} from "./database";
 import dotenv from "dotenv";
+import {id} from "ethers";
 
 dotenv.config();
 
@@ -13,6 +14,8 @@ export interface UserRepository {
     deleteUser(id: number): Promise<void>;
 
     getAllUsers(): Promise<User[]>;
+
+    updateAcceptedTerms(userId: number, accepted: boolean): Promise<void>;
 }
 
 export class UserStorage implements UserRepository {
@@ -23,7 +26,7 @@ export class UserStorage implements UserRepository {
         this.userRepository = AppDataSource.getRepository(User);
     }
 
-    public static getInstance(): UserRepository {
+    public static getInstance(): UserStorage {
         if (!UserStorage.instance) {
             UserStorage.instance = new UserStorage();
         }
@@ -45,6 +48,15 @@ export class UserStorage implements UserRepository {
     async getAllUsers(): Promise<User[]> {
         return await this.userRepository.find();
     }
+
+    async updateAcceptedTerms(userId: number, accepted: boolean): Promise<void> {
+        const user = await this.getUserById(userId);
+        if (!user) {
+            throw new Error(`User with ID ${userId} not found.`);
+        }
+        user.acceptedTerms = accepted;
+        await this.userRepository.save(user);
+    }
 }
 
 
@@ -56,7 +68,7 @@ export class UserMapStorage implements UserRepository {
         this.users = new Map<number, User>();
     }
 
-    public static getInstance(): UserRepository {
+    public static getInstance(): UserMapStorage {
         if (!UserMapStorage.instance) {
             UserMapStorage.instance = new UserMapStorage();
         }
@@ -78,12 +90,21 @@ export class UserMapStorage implements UserRepository {
     async getAllUsers(): Promise<User[]> {
         return Array.from(this.users.values());
     }
+
+    async updateAcceptedTerms(userId: number, accepted: boolean): Promise<void> {
+        const user = await this.getUserById(userId);
+        if (!user) {
+            throw new Error(`User with ID ${userId} not found.`);
+        }
+        user.acceptedTerms = accepted;
+        await this.saveUser(user);
+    }
 }
 
 export function getUserRepository(): UserRepository {
-    if (process.env.USE_LOCAL_STORAGE) {
-        return UserMapStorage.getInstance()
-    } else {
+    if (process.env.USE_LOCAL_STORAGE=== "false") {
         return UserStorage.getInstance()
+    } else {
+        return UserMapStorage.getInstance()
     }
 }

@@ -1,14 +1,16 @@
-import {buildDexClientFor} from "./dex_client";
 import dotenv from "dotenv";
 import {CONTRACTS} from "../fuel/asset/contracts";
 import * as path from "node:path";
 import {retry, setupGlobalHttpClient} from "../utils/call_helper";
 import {startVerifiedAssetsWorker} from "../fuel/asset/verified_assets_provider";
+import {Provider, WalletUnlocked} from "fuels";
+import {DexClient} from "./dex_client";
 
 dotenv.config();
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
-const walletPK = process.env.WALLET_PK;
+const RPC_URL = process.env.RPC_URL;
+const WALLET_PK = process.env.WALLET_PK;
 
 /**
  * Function to create an instance of DexClient and test its methods
@@ -25,7 +27,7 @@ async function testDexClient() {
 
         console.log("Building DexClient...");
         const dexClient = await retry(
-            async () => buildDexClientFor(walletPK),
+            async () => buildDexClientFor(WALLET_PK),
             10
         );
 
@@ -91,6 +93,13 @@ async function testDexClient() {
     } catch (error) {
         console.error("Error testing DexClient:", error.message);
     }
+}
+
+async function buildDexClientFor(walletPK: string): Promise<DexClient> {
+    const provider = await Provider.create(RPC_URL);
+    const wallet = new WalletUnlocked(walletPK, provider);
+
+    return new DexClient(provider, wallet)
 }
 
 // Run the test function

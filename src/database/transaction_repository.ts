@@ -7,6 +7,7 @@ dotenv.config();
 
 export interface TransactionRepository {
     addTransaction(transaction: Transaction): Promise<void>;
+
     getUserTransactions(userId: number): Promise<Transaction[]>;
 }
 
@@ -30,7 +31,7 @@ export class TransactionStorage implements TransactionRepository {
     }
 
     async getUserTransactions(userId: number): Promise<Transaction[]> {
-        return await this.transactionRepository.findBy({ userId });
+        return await this.transactionRepository.findBy({userId});
     }
 }
 
@@ -57,11 +58,12 @@ export class TransactionMapStorage implements TransactionRepository {
         return Array.from(this.transactions.values()).filter(tx => tx.userId === userId);
     }
 }
+
 export function getTransactionRepository(): TransactionRepository {
-    if (process.env.USE_LOCAL_STORAGE) {
-        return TransactionMapStorage.getInstance()
-    } else {
+    if (process.env.USE_LOCAL_STORAGE === "false") {
         return TransactionStorage.getInstance()
+    } else {
+        return TransactionMapStorage.getInstance()
     }
 }
 

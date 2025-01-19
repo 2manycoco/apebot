@@ -1,12 +1,7 @@
 import {DexInterface} from "./dex.interface";
 import {MiraDex} from "./mira-dex/mira_dex";
 
-import {
-    AssetId,
-    BN,
-    Provider,
-    WalletUnlocked
-} from "fuels";
+import {AssetId, BN, Provider, WalletUnlocked} from "fuels";
 
 import {retry} from "../utils/call_helper";
 import {TokenInfo} from "./model";
@@ -15,6 +10,7 @@ import {getVerifiedAssets} from "../fuel/asset/verified_assets_provider";
 export class DexClient {
     private wallet: WalletUnlocked
     private dexArray: DexInterface[] = [];
+    private static tokenInfoCache: Map<string, TokenInfo> = new Map();
 
     constructor(provider: Provider, wallet: WalletUnlocked) {
         this.wallet = wallet;
@@ -37,13 +33,18 @@ export class DexClient {
     }
 
     async getBalance(asset: string): Promise<number> {
-        const amountBN = await this.wallet.getBalance(asset);
+        const amountBN = await retry(
+            async () => await this.wallet.getBalance(asset)
+        );
+
         return await this.getTokenAmount(asset, amountBN);
     }
 
-    async getBalances(): Promise<Array<[string, string]>> {
-        const balances = await this.wallet.getBalances();
-        const balancePairs: Array<[string, string]> = [];
+    async getBalances(): Promise<Array<[string, string, string]>> {
+        const balances = await retry(
+            async () => await this.wallet.getBalances()
+        );
+        const balancePairs: Array<[string, string, string]> = [];
 
         for (const balance of balances.balances) {
             try {
@@ -51,11 +52,11 @@ export class DexClient {
                 const readableAmount =
                     parseFloat(balance.amount.toString()) / Math.pow(10, tokenInfo.decimals);
 
-                balancePairs.push([tokenInfo.symbol.toString(), readableAmount.toFixed(tokenInfo.decimals)]);
+                balancePairs.push([balance.assetId, tokenInfo.symbol.toString(), readableAmount.toFixed(tokenInfo.decimals)]);
             } catch (error) {
                 console.info(`Failed to fetch token info for asset ID ${balance.assetId}: ${error.message}`);
                 const readableAmount = parseFloat(balance.amount.toString());
-                balancePairs.push([balance.assetId, readableAmount.toString()]);
+                balancePairs.push([balance.assetId, balance.assetId, readableAmount.toString()]);
             }
         }
 
@@ -68,17 +69,23 @@ export class DexClient {
 
         if (matchedAsset) {
             return {
+                assetId: matchedAsset.assetId,
                 name: matchedAsset.name,
                 symbol: matchedAsset.symbol,
                 decimals: matchedAsset.decimals,
             };
         }
 
+        if (DexClient.tokenInfoCache.has(asset)) {
+            return DexClient.tokenInfoCache.get(asset)!;
+        }
 
         for (const dex of this.dexArray) {
             try {
                 const assetId = {bits: asset};
-                return await dex.getTokenInfo(assetId);
+                const tokenInfo = await dex.getTokenInfo(assetId);
+                DexClient.tokenInfoCache.set(asset, tokenInfo);
+                return tokenInfo
 
             } catch (error) {
                 console.info(`Failed to get token information from DEX: ${error.message}`);
@@ -86,6 +93,24 @@ export class DexClient {
         }
 
         throw new Error(`Token information not found for asset ID: ${asset}`);
+    }
+
+    // Get the rate of `assetIn` in terms of `assetOut`
+    // The rate represents the value of `assetIn` relative to `assetOut`
+    async getRate(assetIn: string, assetOut: string): Promise<number> {
+        const assetInId = {bits: assetIn};
+        const assetOutId = {bits: assetOut};
+
+        for (const dex of this.dexArray) {
+            try {
+                // Fetch the rate from the DEX
+                return await dex.getRate(assetInId, assetOutId);
+            } catch (error) {
+                console.info(`Failed to fetch rate from DEX: ${error.message}`);
+            }
+        }
+
+        throw new Error(`Unable to fetch rate for assetIn: ${assetIn}, assetOut: ${assetOut}`);
     }
 
     async swap(assetIn: string, assetOut: string, amount: number): Promise<boolean> {

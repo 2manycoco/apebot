@@ -8,11 +8,13 @@ export const Commands = {
 export type CommandKeys = keyof typeof Commands;
 
 export const Actions = {
-    VIEW_BALANCE: "VIEW_BALANCE", // Action for viewing user balance
-    SWAP_ASSET: "SWAP_ASSET", // Action for swapping one asset to another
-    WITHDRAW_FUNDS: "WITHDRAW_FUNDS", // Action for withdrawing funds to a wallet
-    VIEW_WALLET_ADDRESS: "VIEW_WALLET_ADDRESS", // Action for viewing the internal wallet address
-    VIEW_POSITIONS: "VIEW_POSITIONS", // Action for viewing PNL and user positions
+    INTRO_ACCEPT: "ACCEPT_TERMS",
+
+    MAIN_BALANCE: "MAIN_BALANCE",
+    MAIN_WITHDRAW_FUNDS: "MAIN_WITHDRAW_FUNDS",
+    MAIN_VIEW_POSITIONS: "MAIN_VIEW_POSITIONS",
+    MAIN_BUY: "MAIN_BUY",
+    MAIN_WALLET_PK: "MAIN_WALLET_PK"
 };
 
 export type ActionKeys = keyof typeof Actions;

@@ -1,10 +1,11 @@
 import {Provider, WalletUnlocked} from "fuels";
 import {UserSession} from "./user_session";
-import {getUserRepository, UserRepository, UserStorage} from "../database/user_data_storage";
+import {getUserRepository, UserRepository, UserStorage} from "../database/user_repository";
 import {DexClient} from "../dex/dex_client";
 import dotenv from "dotenv";
 import {Context} from "telegraf";
 import {createProvider} from "../fuel/functions";
+import {trackUserAnalytics} from "./user_analytics";
 
 dotenv.config();
 
@@ -67,10 +68,12 @@ export class SessionManager {
 
                 user = {
                     telegramId: userId,
-                    walletPK,
-                    walletAddress,
+                    walletPK: walletPK,
+                    walletAddress: walletAddress,
+                    acceptedTerms: false
                 };
                 await this.userRepository.saveUser(user);
+                await trackUserAnalytics(ctx, "user_created")
             } catch (error) {
                 throw new Error(`Failed to create a wallet for user ${userId}: ${error.message}`);
             }
@@ -82,6 +85,10 @@ export class SessionManager {
         // Create a new session
         const newSession = new UserSession(ctx, userId, wallet, dexClient);
         this.sessions.set(userId, {session: newSession, lastActivity: new Date()});
+        await trackUserAnalytics(ctx, "user_session_started", {
+            wallet_adddress: wallet.address.toString()
+        })
+
         return newSession;
     }
 

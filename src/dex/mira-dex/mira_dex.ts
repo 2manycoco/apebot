@@ -10,7 +10,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const MIRA_POOL_TOKEN_SYMBOL = "MIRA-LP"
-const contractId = process.env.CONTRACT_ID;
+const contractId = process.env.MIRA_CONTRACT_ID;
 
 export class MiraDex implements DexInterface {
     private readonly wallet: WalletUnlocked;
@@ -45,8 +45,9 @@ export class MiraDex implements DexInterface {
         }
 
         return {
+            assetId: assetId.bits,
             name: assetInfo.name || "Unknown",
-            symbol,
+            symbol: symbol,
             decimals: assetInfo.decimals || 0,
         };
     }
@@ -91,5 +92,24 @@ export class MiraDex implements DexInterface {
         return await retry(
             async () => tx.waitForResult()
         );
+    }
+
+    async getRate(assetIn: AssetId, assetOut: AssetId): Promise<number> {
+        const poolId = buildPoolId(assetIn, assetOut, false);
+        const result = await retry(
+            async () => await this.readonlyMiraAmm.getCurrentRate(assetIn, [poolId])
+        );
+
+        if (!result) {
+            throw new Error(`Rate request failed for assetIn: ${assetIn.bits}, assetOut: ${assetOut.bits}`);
+        }
+
+        const [rate, assetInDecimals, assetOutDecimals] = result;
+
+        if (rate <= 0) {
+            throw new Error(`Invalid rate returned for assetIn: ${assetIn.bits}, assetOut: ${assetOut.bits}`);
+        }
+
+        return rate;
     }
 }

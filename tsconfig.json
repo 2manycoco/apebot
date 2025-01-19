@@ -1,17 +1,20 @@
 {
   "compilerOptions": {
-    "target": "ES2021", // Современный стандарт JavaScript
-    "module": "CommonJS", // Используется в Node.js
-    "esModuleInterop": true, // Позволяет использовать CommonJS модули
-    "emitDecoratorMetadata": true, // Генерация метаданных для декораторов
-    "experimentalDecorators": true, // Включает поддержку декораторов
-    "skipLibCheck": true, // Пропускает проверку типов библиотек
-    "outDir": "./dist", // Папка для скомпилированных файлов
-    "rootDir": "./src", // Папка с исходным кодом
-    "moduleResolution": "node", // Резолвинг модулей как в Node.js
-    "resolveJsonModule": true, // Поддержка импорта JSON файлов
-    "typeRoots": ["./node_modules/@types"] // Типы для библиотек
+    "target": "ES2021",
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src/**/*.ts"], // Все файлы TypeScript в папке src
-  "exclude": ["node_modules"] // Исключает node_modules
+  "include": [
+    "src/**/*.ts",
+    "node_modules/handlebars/types/index.d.ts"
+  ],
+  "exclude": ["node_modules"]
 }

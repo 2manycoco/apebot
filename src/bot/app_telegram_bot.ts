@@ -56,9 +56,6 @@ async function handleUserInteraction(
 
 async function getSession(ctx: Context) {
     const sessionManager = await SessionManager.getInstance()
-    if (!sessionManager) {
-        throw new Error("Session manager is not initialized. Please restart the bot.");
-    }
 
     const userId = ctx.from?.id;
 

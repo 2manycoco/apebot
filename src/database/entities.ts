@@ -1,4 +1,4 @@
-import {Entity, PrimaryColumn, Column, PrimaryGeneratedColumn, Index} from "typeorm";
+import {Entity, PrimaryColumn, Column, PrimaryGeneratedColumn, Index, CreateDateColumn} from "typeorm";
 
 @Entity()
 export class User  {
@@ -10,6 +10,12 @@ export class User  {
 
     @Column("varchar", { length: 255, name: "wallet_address", nullable: false })
     walletAddress: string = "";
+
+    @Column("bool", { name: "accepted_terms", default: false })
+    acceptedTerms: boolean = false;
+
+    @Column("decimal", { name: "slippage", default: 0.5 })
+    slippage: number = 0.5;
 }
 
 @Entity("transactions")
@@ -35,4 +41,27 @@ export class Transaction {
 
     @Column("bigint", { name: "timestamp", nullable: false })
     timestamp: number = 0;
+}
+
+export enum LogLevel {
+    INFO = "INFO",
+    ERROR = "ERROR",
+}
+
+@Entity("logs")
+export class Log {
+    @PrimaryGeneratedColumn("uuid", { name: "log_id" })
+    logId: string;
+
+    @CreateDateColumn({ name: "timestamp" })
+    timestamp: Date;
+
+    @Column("varchar", { length: 50, name: "tag" })
+    tag: string;
+
+    @Column("text", { name: "message" })
+    message: string;
+
+    @Column("enum", { enum: LogLevel, name: "level" })
+    level: LogLevel;
 }

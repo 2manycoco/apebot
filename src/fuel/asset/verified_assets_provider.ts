@@ -65,9 +65,9 @@ export async function getVerifiedAssets(): Promise<AssetVerified[]> {
 }
 
 
-export function startVerifiedAssetsWorker() {
+export async function startVerifiedAssetsWorker() {
+    await updateVerifiedAssetsCache();
     setInterval(() => {
-        console.log("Starting periodic update for verified assets...");
         updateVerifiedAssetsCache();
     }, 30 * 60 * 1000); // 30 mins
 }
