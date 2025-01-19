@@ -1,7 +1,7 @@
 import {Context} from "telegraf";
 import {Logger} from "../../utils/logger";
 import AnalyticsService from "../../analytics/analytics_service";
-import {ActionKeys} from "../actions";
+import {ActionKeys, ActionValues} from "../actions";
 import {Message} from "@telegraf/types/message";
 import {UserManager} from "../user_manager";
 
@@ -29,7 +29,7 @@ export abstract class Flow {
      * Handles callback actions for buttons during the Flow.
      * @param action The action string received from the button callback.
      */
-    public abstract handleAction(action: ActionKeys): Promise<boolean>;
+    public abstract handleAction(action: ActionValues): Promise<boolean>;
 
     /**
      * Handles user input during the Flow.

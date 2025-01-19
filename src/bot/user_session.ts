@@ -1,5 +1,5 @@
 import {Context, Markup} from "telegraf";
-import {ActionKeys, Actions, CommandKeys, Commands} from "./actions";
+import {ActionKeys, Actions, ActionValues, CommandKeys, Commands, CommandValues} from "./actions";
 import {DexClient} from "../dex/dex_client";
 import {WalletUnlocked} from "fuels";
 import {getUserRepository, UserRepository} from "../database/user_repository";
@@ -37,7 +37,7 @@ export class UserSession {
         this.analytics = AnalyticsService.getInstance()
     }
 
-    async handleCommand(command: CommandKeys) {
+    async handleCommand(command: CommandValues) {
         await trackUserAnalytics(this.ctx, "user_command", {
             command_name: command
         })
@@ -67,7 +67,7 @@ export class UserSession {
      * Handle actions from buttons during an active Flow.
      * @param action The action string received from the button callback.
      */
-    async handleAction(action: ActionKeys): Promise<void> {
+    async handleAction(action: ActionValues): Promise<void> {
         await trackUserAnalytics(this.ctx, "user_action", {
             action_name: action
         })
@@ -83,7 +83,7 @@ export class UserSession {
         await this.onCommandStart()
     }
 
-    private async handleMenuAction(action: ActionKeys): Promise<boolean> {
+    private async handleMenuAction(action: ActionValues): Promise<boolean> {
         switch (action) {
             case Actions.MAIN_BALANCE:
                 await this.showBalance();

@@ -70,7 +70,8 @@ export class SessionManager {
                     telegramId: userId,
                     walletPK: walletPK,
                     walletAddress: walletAddress,
-                    acceptedTerms: false
+                    acceptedTerms: false,
+                    slippage: 0.5
                 };
                 await this.userRepository.saveUser(user);
                 await trackUserAnalytics(ctx, "user_created")

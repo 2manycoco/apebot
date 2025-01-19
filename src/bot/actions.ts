@@ -3,9 +3,10 @@
 export const Commands = {
     START: "start", // Command to start the bot
     ABOUT: "about", // Command to show help information
-};
+} as const;
 
 export type CommandKeys = keyof typeof Commands;
+export type CommandValues = typeof Commands[CommandKeys];
 
 export const Actions = {
     INTRO_ACCEPT: "ACCEPT_TERMS",
@@ -15,6 +16,7 @@ export const Actions = {
     MAIN_VIEW_POSITIONS: "MAIN_VIEW_POSITIONS",
     MAIN_BUY: "MAIN_BUY",
     MAIN_WALLET_PK: "MAIN_WALLET_PK"
-};
+} as const;
 
 export type ActionKeys = keyof typeof Actions;
+export type ActionValues = typeof Actions[ActionKeys];

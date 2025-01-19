@@ -1,6 +1,6 @@
 import {Flow} from "./flow";
 import {Context, Markup} from "telegraf";
-import {ActionKeys, Actions} from "../actions";
+import {ActionKeys, Actions, ActionValues} from "../actions";
 
 
 export class IntroduceFlow extends Flow {
@@ -26,7 +26,7 @@ export class IntroduceFlow extends Flow {
         })
     }
 
-    public async handleAction(action: ActionKeys): Promise<boolean> {
+    public async handleAction(action: ActionValues): Promise<boolean> {
         switch (action) {
             case Actions.INTRO_ACCEPT:
                 await this.userManager.acceptTerms();

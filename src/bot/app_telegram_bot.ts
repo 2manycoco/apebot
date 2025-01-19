@@ -1,5 +1,5 @@
 import {Telegraf, Context} from "telegraf";
-import {Actions, CommandKeys, Commands} from "./actions";
+import {Actions, ActionValues, CommandKeys, Commands, CommandValues} from "./actions";
 import {UserSession} from "./user_session";
 import {SessionManager} from "./session_manager";
 import {handleUserError} from "./help_functions";
@@ -18,8 +18,8 @@ app_telegram_bot.command(Object.values(Commands), async (ctx) => {
         const commandText = ctx.message.text.slice(1).toLowerCase();
 
         // Check if the command matches any defined CommandKeys
-        if (Object.values(Commands).includes(commandText)) {
-            const command = commandText as CommandKeys;
+        if ((Object.values(Commands) as CommandValues[]).includes(commandText as CommandValues)) {
+            const command = commandText as CommandValues;
             await session.handleCommand(command);
         } else {
             console.warn(`Unknown command received: ${commandText}`);
@@ -30,7 +30,7 @@ app_telegram_bot.command(Object.values(Commands), async (ctx) => {
 // Handle button clicks
 app_telegram_bot.action(Object.values(Actions), async (ctx) => {
     await handleUserInteraction(ctx, async (session) => {
-        const action = ctx.match?.[0];
+        const action = ctx.match?.[0] as ActionValues;
         if (!action) {
             await ctx.reply("Unable to process action. Please try again.");
             return;
