@@ -1,8 +1,8 @@
 import {Context} from "telegraf";
 import {Logger} from "../../utils/logger";
 import AnalyticsService from "../../analytics/analytics_service";
-import {ActionKeys, ActionValues} from "../actions";
-import {Message} from "@telegraf/types/message";
+import {ActionValues} from "../actions";
+import {Message} from "@telegraf/types";
 import {UserManager} from "../user_manager";
 
 export abstract class Flow {

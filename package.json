@@ -1,10 +1,10 @@
 {
   "name": "ape-fuel-bot",
   "version": "1.0.0",
-  "main": "dist/application.js",
+  "main": "src/application.ts",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/application.js",
+    "start": "npx ts-node src/application.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "typescript": "^5.2.2",
     "axios": "^1.7.9",
     "axios-retry": "^4.5.0",
     "dotenv": "^16.4.7",
@@ -20,12 +21,16 @@
     "graphql": "^16.10.0",
     "mira-dex-ts": "github:mira-amm/mira-v1-ts",
     "telegraf": "^4.16.3",
+    "@telegraf/types": "^7.1.0",
     "typeorm": "^0.3.20",
     "reflect-metadata": "^0.2.2",
     "pg": "^8.13.1",
-    "@amplitude/analytics-node": "^1.3.6"
+    "@amplitude/analytics-node": "^1.3.6",
+    "@amplitude/analytics-types": "^2.8.4"
   },
   "devDependencies": {
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1",
+    "tsx": "^4.19.2"
   }
 }

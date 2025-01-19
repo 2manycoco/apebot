@@ -1,8 +1,7 @@
 import * as amplitude from '@amplitude/analytics-node';
 import dotenv from "dotenv";
 import path from "node:path";
-import {EventOptions} from "@amplitude/analytics-types/lib/esm/base-event";
-import {identify} from "@amplitude/analytics-node";
+import {EventOptions} from "@amplitude/analytics-types";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
