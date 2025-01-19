@@ -1,6 +1,9 @@
 # Use the official Node.js image with a specific version
 FROM node:18-alpine
 
+# Установим git и другие зависимости для билда
+RUN apk add --no-cache git python3 make g++
+
 # Install pnpm globally
 RUN npm install -g pnpm
 
