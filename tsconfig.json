@@ -11,9 +11,11 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "typeRoots": ["./node_modules/@types"],
-    "types": ["node"]
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*.ts",
+    "node_modules/handlebars/types/index.d.ts"
+  ],
   "exclude": ["node_modules"]
 }
