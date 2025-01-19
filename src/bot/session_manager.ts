@@ -1,11 +1,12 @@
 import {Provider, WalletUnlocked} from "fuels";
 import {UserSession} from "./user_session";
-import {getUserRepository, UserRepository, UserStorage} from "../database/user_repository";
+import {getUserRepository, UserRepository} from "../database/user_repository";
 import {DexClient} from "../dex/dex_client";
 import dotenv from "dotenv";
 import {Context} from "telegraf";
 import {createProvider} from "../fuel/functions";
 import {trackUserAnalytics} from "./user_analytics";
+import {Mutex} from "../utils/mutex";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ export class SessionManager {
     private readonly userRepository: UserRepository
 
     private sessions: SessionMap = new Map();
+    private mutex = new Mutex();
 
     private readonly inactivityThreshold = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
@@ -60,23 +62,33 @@ export class SessionManager {
             }
         } else {
             // If user doesn't exist, create a new wallet and save the user
+            await this.mutex.acquire();
             try {
-                wallet = WalletUnlocked.generate(); // Create a new wallet
-                const walletAddress = wallet.address.toString();
-                const walletPK = wallet.privateKey;
-                wallet.provider = this.provider
+                user = await this.userRepository.getUserById(userId);
+                if (!user) {
+                    try {
+                        wallet = WalletUnlocked.generate();
+                        const walletAddress = wallet.address.toString();
+                        const walletPK = wallet.privateKey;
+                        wallet.provider = this.provider;
 
-                user = {
-                    telegramId: userId,
-                    walletPK: walletPK,
-                    walletAddress: walletAddress,
-                    acceptedTerms: false,
-                    slippage: 0.5
-                };
-                await this.userRepository.saveUser(user);
-                await trackUserAnalytics(ctx, "user_created")
-            } catch (error) {
-                throw new Error(`Failed to create a wallet for user ${userId}: ${error.message}`);
+                        user = {
+                            telegramId: userId,
+                            walletPK: walletPK,
+                            walletAddress: walletAddress,
+                            acceptedTerms: false,
+                            slippage: 0.5,
+                        };
+                        await this.userRepository.saveUser(user);
+                        await trackUserAnalytics(ctx, "user_created");
+                    } catch (error) {
+                        throw new Error(`Failed to create a wallet for user ${userId}: ${error.message}`);
+                    }
+                } else {
+                    wallet = new WalletUnlocked(user.walletPK, this.provider);
+                }
+            } finally {
+                this.mutex.release();
             }
         }
 
@@ -87,7 +99,7 @@ export class SessionManager {
         const newSession = new UserSession(ctx, userId, wallet, dexClient);
         this.sessions.set(userId, {session: newSession, lastActivity: new Date()});
         await trackUserAnalytics(ctx, "user_session_started", {
-            wallet_adddress: wallet.address.toString()
+            wallet_address: wallet.address.toString()
         })
 
         return newSession;
