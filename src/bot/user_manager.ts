@@ -1,5 +1,4 @@
 import {Logger} from "../utils/logger";
-import AnalyticsService from "../analytics/analytics_service";
 import {getUserRepository, UserRepository} from "../database/user_repository";
 import {Context} from "telegraf";
 import {trackUserAnalytics} from "./user_analytics";
@@ -12,6 +11,7 @@ export class UserManager {
 
     constructor(ctx: Context, userId: number) {
         this.userId = userId;
+        this.ctx = ctx;
         this.userRepository = getUserRepository()
         this.logger = Logger.getInstance()
     }

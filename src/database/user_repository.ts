@@ -11,6 +11,8 @@ export interface UserRepository {
 
     saveUser(user: User): Promise<void>;
 
+    deleteAllUsers(): Promise<void>;
+
     deleteUser(id: number): Promise<void>;
 
     getAllUsers(): Promise<User[]>;
@@ -39,6 +41,10 @@ export class UserStorage implements UserRepository {
 
     async saveUser(user: User): Promise<void> {
         await this.userRepository.save(user);
+    }
+
+    async deleteAllUsers(): Promise<void> {
+        await this.userRepository.clear();
     }
 
     async deleteUser(id: number): Promise<void> {
@@ -83,6 +89,12 @@ export class UserMapStorage implements UserRepository {
         this.users.set(user.telegramId, user);
     }
 
+    deleteAllUsers(): Promise<void>; // Новый метод для удаления всех пользователей
+
+    async deleteAllUsers(): Promise<void> {
+        await this.users.clear()
+    }
+
     async deleteUser(id: number): Promise<void> {
         this.users.delete(id);
     }
@@ -102,7 +114,7 @@ export class UserMapStorage implements UserRepository {
 }
 
 export function getUserRepository(): UserRepository {
-    if (process.env.USE_LOCAL_STORAGE=== "false") {
+    if (process.env.USE_LOCAL_STORAGE === "false") {
         return UserStorage.getInstance()
     } else {
         return UserMapStorage.getInstance()
