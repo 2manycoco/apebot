@@ -13,8 +13,8 @@ WORKDIR /usr/src/app
 # Copy package.json and package-lock.json to the container
 COPY package*.json ./
 
-# Install dependencies
-RUN pnpm install
+# Install dependencies, включая devDependencies
+RUN pnpm install --production=false
 
 # Copy the rest of the application files into the container
 COPY . .
