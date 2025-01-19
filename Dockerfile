@@ -1,6 +1,9 @@
 # Use the official Node.js image with a specific version
 FROM node:18-alpine
 
+# Install pnpm globally
+RUN npm install -g pnpm
+
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
@@ -8,7 +11,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN pnpm install
 
 # Copy the rest of the application files into the container
 COPY . .
@@ -16,7 +19,7 @@ COPY . .
 # Compile TypeScript to JavaScript
 RUN npx tsc
 
-# Expose the port your bot will listen on (if applicable, change the port if necessary)
+# Expose the port your bot will listen on (if applicable)
 EXPOSE 3000
 
 # Set the default command to run your application
