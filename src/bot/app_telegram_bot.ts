@@ -1,5 +1,5 @@
 import {Telegraf, Context} from "telegraf";
-import {Actions, ActionValues, CommandKeys, Commands, CommandValues} from "./actions";
+import {Actions, ActionValues, Commands, CommandValues} from "./actions";
 import {UserSession} from "./user_session";
 import {SessionManager} from "./session_manager";
 import {handleUserError} from "./help_functions";
@@ -63,7 +63,15 @@ async function getSession(ctx: Context) {
         throw Error("Unable to identify user. Please try again later.");
     }
 
+    if (!validateUser(ctx)) {
+        throw Error(`Service is not available for user ${userId}`);
+    }
+
     return await sessionManager.getSession(ctx, userId);
+}
+
+function validateUser(ctx: Context): boolean {
+    return !ctx.from.is_bot
 }
 
 

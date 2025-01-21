@@ -2,24 +2,28 @@ import {Context} from "telegraf";
 import {Logger} from "../../utils/logger";
 import AnalyticsService from "../../analytics/analytics_service";
 import {ActionValues} from "../actions";
-import {Message} from "@telegraf/types";
 import {UserManager} from "../user_manager";
+import {Message} from "@telegraf/types";
+import {FlowValues} from "./flow_ids";
 
 export abstract class Flow {
     protected userId: number;
     protected ctx: Context;
-    protected logger: Logger
-    protected analytics: AnalyticsService
-    protected userManager: UserManager
+    protected logger: Logger;
+    protected analytics: AnalyticsService;
+    protected userManager: UserManager;
     private sentMessageIds: number[] = [];
+    private readonly onCompleteCallback?: (flowId: string) => void;
 
-    protected constructor(ctx: Context, userId: number) {
+    protected constructor(ctx: Context, userId: number, onCompleteCallback?: (flowId: string) => void) {
         this.userId = userId;
-        this.ctx = ctx
-        this.logger = Logger.getInstance()
-        this.analytics = AnalyticsService.getInstance()
-        this.userManager = new UserManager(ctx, userId)
+        this.ctx = ctx;
+        this.logger = Logger.getInstance();
+        this.analytics = AnalyticsService.getInstance();
+        this.userManager = new UserManager(ctx, userId);
+        this.onCompleteCallback = onCompleteCallback;
     }
+
     /**
      * Called when the Flow is started.
      */
@@ -29,17 +33,46 @@ export abstract class Flow {
      * Handles callback actions for buttons during the Flow.
      * @param action The action string received from the button callback.
      */
-    public abstract handleAction(action: ActionValues): Promise<boolean>;
+    public async handleAction(action: ActionValues): Promise<boolean> {
+        await this.handleActionInternal(action)
+        await this.checkFinished()
+        return Promise.resolve(true)
+    }
+
+    public abstract handleActionInternal(action: ActionValues): Promise<boolean>;
 
     /**
      * Handles user input during the Flow.
      * @param message The message or input from the user.
      */
-    public abstract handleMessage(message: string): Promise<boolean>;
-
-    protected async handleMessageResult(){
-
+    public async handleMessage(message: string): Promise<boolean> {
+        await this.handleMessageInternal(message)
+        await this.checkFinished()
+        return Promise.resolve(true)
     }
+
+    public abstract handleMessageInternal(message: string): Promise<boolean>;
+
+    private async checkFinished() {
+        if (this.isFinished()) {
+            await this.cleanup()
+            if (this.onCompleteCallback) {
+                this.onCompleteCallback(this.getFlowId());
+            }
+        }
+    }
+
+    protected abstract isFinished(): boolean;
+
+    /**
+     * Cleans up the Flow if the user cancels it or completes it.
+     */
+    public abstract cleanup(): Promise<void>
+
+    /**
+     * Returns the identifier of the Flow.
+     */
+    public abstract getFlowId(): FlowValues
 
     protected async handleMessageResponse(
         sendAction: () => Promise<Message>
@@ -50,24 +83,16 @@ export abstract class Flow {
         }
     }
 
-    public abstract isFinished(): boolean
-
-    /**
-     * Cleans up the Flow if the user cancels it or completes it.
-     */
-    public async cleanup(): Promise<void> {
-        return await this.clearMessages()
-    }
-
-    private async clearMessages(): Promise<void> {
+    protected async clearMessages(): Promise<void> {
         for (const messageId of this.sentMessageIds) {
             try {
                 await this.ctx.deleteMessage(messageId);
             } catch (error) {
                 console.error(`Failed to delete message ${messageId}:`, error.message);
-                await this.logger.e("clearMessages", error.message)
+                await this.logger.e("clearMessages", error.message);
             }
         }
         this.sentMessageIds = [];
     }
 }
+

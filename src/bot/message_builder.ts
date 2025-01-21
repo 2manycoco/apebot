@@ -1,5 +1,6 @@
 import {Context, Markup} from "telegraf";
 import {Actions} from "./actions";
+import {Strings} from "./resources/strings";
 
 export async function replyMenu(ctx: Context, walletAddress: string, amount: number, symbol: string) {
     const message = `
@@ -13,15 +14,15 @@ export async function replyMenu(ctx: Context, walletAddress: string, amount: num
         ...Markup.inlineKeyboard(
             [
                 [
-                    Markup.button.callback("📈 Positions", Actions.MAIN_VIEW_POSITIONS),
-                    Markup.button.callback("💰 Balance", Actions.MAIN_BALANCE),
+                    Markup.button.callback(Strings.MENU_BUTTON_POSITIONS, Actions.MAIN_VIEW_POSITIONS),
+                    Markup.button.callback(Strings.MENU_BUTTON_BALANCE, Actions.MAIN_BALANCE),
                 ],
                 [
-                    Markup.button.callback("💸 BUY", Actions.MAIN_BUY),
-                    Markup.button.callback("⬆️ Withdraw", Actions.MAIN_WITHDRAW_FUNDS),
+                    Markup.button.callback(Strings.MENU_BUTTON_BUY, Actions.MAIN_BUY),
+                    Markup.button.callback(Strings.MENU_BUTTON_WITHDRAW, Actions.MAIN_WITHDRAW_FUNDS),
                 ],
                 [
-                    Markup.button.callback("🔑 Wallet PK", Actions.MAIN_WALLET_PK)
+                    Markup.button.callback(Strings.MENU_BUTTON_WALLET_PK, Actions.MAIN_WALLET_PK)
                 ]
             ]
         ),
@@ -34,7 +35,12 @@ export async function replyBalance(ctx: Context, balances: Array<[string, string
         .map(([, symbol, amount]) => `*${symbol.padEnd(maxSymbolLength)}:* \`${amount}\``)
         .join("\n");
 
-    const amountFixed = sumAmount.toFixed(5)
+    let amountFixed : string
+    if (sumAmount != 0) {
+        amountFixed = sumAmount.toFixed(5)
+    } else {
+        amountFixed = sumAmount.toFixed(2)
+    }
     const message = `
 ${balancesMessage}    
     

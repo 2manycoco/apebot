@@ -7,6 +7,7 @@ import {Context} from "telegraf";
 import {createProvider} from "../fuel/functions";
 import {trackUserAnalytics} from "./user_analytics";
 import {Mutex} from "../utils/mutex";
+import {EncryptionManager} from "../utils/encryption_manager";
 
 dotenv.config();
 
@@ -56,7 +57,7 @@ export class SessionManager {
         // If user exists, initialize WalletUnlocked from stored data
         if (user) {
             try {
-                wallet = new WalletUnlocked(user.walletPK, this.provider);
+                wallet = new WalletUnlocked(EncryptionManager.decrypt(user.walletPK), this.provider);
             } catch (error) {
                 throw new Error(`Failed to initialize wallet for user ${userId}: ${error.message}`);
             }
@@ -69,7 +70,7 @@ export class SessionManager {
                     try {
                         wallet = WalletUnlocked.generate();
                         const walletAddress = wallet.address.toString();
-                        const walletPK = wallet.privateKey;
+                        const walletPK = EncryptionManager.encrypt(wallet.privateKey);
                         wallet.provider = this.provider;
 
                         user = {
@@ -85,7 +86,7 @@ export class SessionManager {
                         throw new Error(`Failed to create a wallet for user ${userId}: ${error.message}`);
                     }
                 } else {
-                    wallet = new WalletUnlocked(user.walletPK, this.provider);
+                    wallet = new WalletUnlocked(EncryptionManager.decrypt(user.walletPK), this.provider);
                 }
             } finally {
                 this.mutex.release();

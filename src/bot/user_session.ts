@@ -1,5 +1,5 @@
 import {Context, Markup} from "telegraf";
-import {ActionKeys, Actions, ActionValues, CommandKeys, Commands, CommandValues} from "./actions";
+import {Actions, ActionValues, Commands, CommandValues} from "./actions";
 import {DexClient} from "../dex/dex_client";
 import {WalletUnlocked} from "fuels";
 import {getUserRepository, UserRepository} from "../database/user_repository";
@@ -8,10 +8,15 @@ import AnalyticsService from "../analytics/analytics_service";
 import {trackUserAnalytics} from "./user_analytics";
 import {Flow} from "./flow/flow";
 import {UserManager} from "./user_manager";
-import {handleUserError, replyProgress, withProgress} from "./help_functions";
+import {withProgress} from "./help_functions";
 import {IntroduceFlow} from "./flow/introduce_flow";
-import {CONTRACTS, TRADE_ASSET} from "../fuel/asset/contracts";
+import {TRADE_ASSET} from "../fuel/asset/contracts";
 import {replyBalance, replyMenu, replyWalletPK} from "./message_builder";
+import dotenv from "dotenv";
+import path from "node:path";
+import {FlowId, FlowValues} from "./flow/flow_ids";
+
+dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
 export class UserSession {
     private ctx: Context;
@@ -49,6 +54,9 @@ export class UserSession {
                 case Commands.ABOUT:
                     await this.onCommandHelp();
                     break;
+                case Commands.DOCS:
+                    await this.onCommandDocs();
+                    break;
                 default:
                     await this.ctx.reply("Unknown action. Please choose a valid option.");
             }
@@ -61,6 +69,17 @@ export class UserSession {
 
     private async onCommandHelp() {
 
+    }
+
+    private async onCommandDocs() {
+        await this.ctx.reply(
+            "Откройте документацию, нажав на кнопку ниже:",
+            {
+                ...Markup.inlineKeyboard([
+                    Markup.button.url("Открыть документацию", process.env.DOC_URL),
+                ]),
+            }
+        );
     }
 
     /**
@@ -91,12 +110,12 @@ export class UserSession {
             case Actions.MAIN_WALLET_PK:
                 await this.showWalletPK();
                 return true;
-           /* case Actions.MAIN_WITHDRAW_FUNDS:
-                await this.withdrawFunds();
-                break;
-            case Actions.MAIN_VIEW_POSITIONS:
-                await this.viewPositions();
-                break;*/
+            /* case Actions.MAIN_WITHDRAW_FUNDS:
+                 await this.withdrawFunds();
+                 break;
+             case Actions.MAIN_VIEW_POSITIONS:
+                 await this.viewPositions();
+                 break;*/
             default:
                 return false;
         }
@@ -138,11 +157,17 @@ export class UserSession {
         await flow.start();
     }
 
-    private async clearActiveFlow(): Promise<void> {
-        if (this.activeFlow) {
-            await this.activeFlow.cleanup();
+    /**
+     * Callback to handle the completion of a Flow.
+     * @param flowId - The identifier of the completed Flow.
+     */
+    private async onFlowCompleted(flowId: FlowValues) {
+        this.activeFlow = null;
+        switch (flowId) {
+            case FlowId.INTRO_FLOW:
+                await this.showMenu()
+                break;
         }
-        this.activeFlow = null
     }
 
     // ---------- Main simple action ----------
@@ -162,7 +187,6 @@ export class UserSession {
         let balances: Array<[string, string, string]>
         await withProgress(this.ctx, async () => {
             balances = await this.dexClient.getBalances();
-
             for (const [assetId, symbol, amount] of balances) {
                 const balanceAmount = parseFloat(amount);
                 if (symbol === TRADE_ASSET.symbol) {
@@ -193,12 +217,7 @@ export class UserSession {
         handleCall: () => Promise<boolean>
     ): Promise<boolean> {
         if (this.activeFlow) {
-            if (this.activeFlow.isFinished()) {
-                await this.clearActiveFlow()
-                return false
-            } else {
-                return handleCall()
-            }
+            return handleCall()
         } else {
             return false
         }
@@ -209,7 +228,9 @@ export class UserSession {
     ): Promise<void> {
         const isAccept = await this.userManager.isAcceptTerms()
         if (!isAccept) {
-            await this.startFlow(new IntroduceFlow(this.ctx, this.userId))
+            await this.startFlow(new IntroduceFlow(this.ctx, this.userId, (flowId:FlowValues) => {
+                this.onFlowCompleted(flowId);
+            }));
         } else {
             await afterCall()
         }

@@ -3,11 +3,11 @@ import {Logger} from "../../utils/logger";
 
 export class ProgressAnimation {
     private progressFrames = [
-        " ⬤",
-        " ⬤ ⬤",
-        " ⬤ ⬤ ⬤",
-        " ⬤ ⬤ ⬤ ⬤",
-        " ⬤ ⬤ ⬤ ⬤ ⬤",
+        " ●",
+        " ● ●",
+        " ● ● ●",
+        " ● ● ● ●",
+        " ● ● ● ● ●",
     ];
     private messageId: number | undefined;
     private intervalId: NodeJS.Timeout | undefined;

@@ -1,32 +1,38 @@
 import {Flow} from "./flow";
 import {Context, Markup} from "telegraf";
-import {ActionKeys, Actions, ActionValues} from "../actions";
-
+import {Actions, ActionValues} from "../actions";
+import {FlowId, FlowValues} from "./flow_ids";
+import {Images} from "../resources/images";
+import {Strings} from "../resources/strings";
 
 export class IntroduceFlow extends Flow {
 
     private isUserAccept = false
 
-    constructor(ctx: Context, userId: number) {
-        super(ctx, userId);
+    constructor(ctx: Context, userId: number, onCompleteCallback?: (flowId: string) => void) {
+        super(ctx, userId, onCompleteCallback);
+    }
+
+    getFlowId(): FlowValues {
+        return FlowId.INTRO_FLOW;
     }
 
     public async start(): Promise<void> {
         await this.handleMessageResponse(async () => {
             return await this.ctx.replyWithPhoto(
-                {url: "https://wallpapers.com/images/featured-full/funny-old-man-pictures-29zq8pp6pi1gcap8.jpg"}, // Replace with your image URL
+                {url: Images.APE_LOGO},
                 {
-                    caption: `This is the start message. Check this link: [LinkedIn](https://www.linkedin.com/in/antiglobalist/)`,
+                    caption: Strings.INTRODUCE_TEXT,
                     parse_mode: "Markdown",
                     ...Markup.inlineKeyboard([
-                        Markup.button.callback("Accept", Actions.INTRO_ACCEPT),
+                        Markup.button.callback(Strings.INTRODUCE_BUTTON, Actions.INTRO_ACCEPT),
                     ]),
                 }
             )
         })
     }
 
-    public async handleAction(action: ActionValues): Promise<boolean> {
+    public async handleActionInternal(action: ActionValues): Promise<boolean> {
         switch (action) {
             case Actions.INTRO_ACCEPT:
                 await this.userManager.acceptTerms();
@@ -37,7 +43,7 @@ export class IntroduceFlow extends Flow {
         }
     }
 
-    public handleMessage(message: string): Promise<boolean> {
+    public handleMessageInternal(message: string): Promise<boolean> {
         return Promise.resolve(undefined);
     }
 
@@ -45,7 +51,8 @@ export class IntroduceFlow extends Flow {
         return this.isUserAccept;
     }
 
-    public cleanup(): Promise<void> {
-        return Promise.resolve(undefined);
+    public async cleanup(): Promise<void> {
+        await super.clearMessages();
+        return Promise.resolve();
     }
 }

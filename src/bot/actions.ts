@@ -3,6 +3,7 @@
 export const Commands = {
     START: "start", // Command to start the bot
     ABOUT: "about", // Command to show help information
+    DOCS: "docs", // Command to show help information
 } as const;
 
 export type CommandKeys = keyof typeof Commands;
