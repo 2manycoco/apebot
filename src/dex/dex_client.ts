@@ -118,7 +118,7 @@ export class DexClient {
         throw new Error(`Unable to fetch rate for assetIn: ${assetIn}, assetOut: ${assetOut}`);
     }
 
-    async swap(assetIn: string, assetOut: string, amount: number): Promise<boolean> {
+    async swap(assetIn: string, assetOut: string, amount: number, slippage: number): Promise<boolean> {
         const assetInId = {bits: assetIn};
         const assetOutId = {bits: assetOut};
 
@@ -128,7 +128,7 @@ export class DexClient {
 
         const balanceBefore = await this.wallet.getBalance(assetOut);
         try {
-            const result = await bestDex.swap(assetInId, assetOutId, amountBN)
+            const result = await bestDex.swap(assetInId, assetOutId, amountBN, slippage)
             return result != null
         } catch (error) {
             const balanceAfter = await this.wallet.getBalance(assetOut);

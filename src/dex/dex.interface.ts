@@ -7,7 +7,7 @@ export interface DexInterface {
 
     getSwapAmount(assetIn: AssetId, assetOut: AssetId, amount: BN): Promise<BN>;
 
-    swap(assetIn: AssetId, assetOut: AssetId, amount: BN): Promise<TransactionResult>;
+    swap(assetIn: AssetId, assetOut: AssetId, amount: BN, slippage: number): Promise<TransactionResult>;
 
     getRate(assetIn: AssetId, assetOut: AssetId): Promise<number>;
 }

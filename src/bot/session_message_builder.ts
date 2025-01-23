@@ -1,6 +1,7 @@
 import {Context, Markup} from "telegraf";
 import {Actions} from "./actions";
 import {formatMessage, Strings} from "./resources/strings";
+import {Message} from "@telegraf/types";
 
 export async function replyMenu(ctx: Context, walletAddress: string, amount: number, symbol: string) {
     const message = formatMessage(Strings.MENU_TEXT, walletAddress, amount, symbol);
@@ -47,6 +48,18 @@ export async function replyWalletPK(ctx: Context, walletPK: string) {
     const message = formatMessage(Strings.WALLET_PK_TEXT, walletPK);
 
     await ctx.reply(message, {parse_mode: "Markdown"});
+}
+
+export async function replyConfirmMessage(ctx: Context, confirmationMessage: string) :Promise<Message> {
+    return await ctx.reply(confirmationMessage, {
+        parse_mode: "Markdown",
+        ...Markup.inlineKeyboard([
+            [
+                Markup.button.callback(Strings.BUTTON_CANCEL, Actions.CANCEL),
+                Markup.button.callback(Strings.BUTTON_ACCEPT, Actions.ACCEPT),
+            ],
+        ]),
+    });
 }
 
 /* PNL

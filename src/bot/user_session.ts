@@ -10,13 +10,16 @@ import {Flow} from "./flow/flow";
 import {UserManager} from "./user_manager";
 import {withProgress} from "./help_functions";
 import {IntroduceFlow} from "./flow/introduce_flow";
-import {TRADE_ASSET} from "../fuel/asset/contracts";
+import {CONTRACTS, TRADE_ASSET} from "../fuel/asset/contracts";
 import {replyBalance, replyMenu, replyWalletPK} from "./session_message_builder";
 import dotenv from "dotenv";
 import path from "node:path";
 import {FlowId, FlowValues} from "./flow/flow_ids";
 import {WithdrawFlow} from "./flow/withdraw_flow";
 import {SetSlippageFlow} from "./flow/set_slippage_flow";
+import {SwapFlow} from "./flow/swap_flow";
+import { isValidFuelAddress } from "../fuel/functions";
+import {BuyFlow} from "./flow/buy_flow";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -120,9 +123,9 @@ export class UserSession {
             case Actions.MAIN_SLIPPAGE:
                 await this.setSlippage();
                 return true;
-             /*case Actions.MAIN_VIEW_POSITIONS:
-                 await this.viewPositions();
-                  return true;*/
+             case Actions.MAIN_BUY:
+                  await this.startBuy(null)
+                  return true;
             default:
                 return false;
         }
@@ -136,12 +139,13 @@ export class UserSession {
         await trackUserAnalytics(this.ctx, "user_message", {
             message: message
         })
-        const isIntercepted = this.interceptOnActiveFLow(async () => {
+        const isIntercepted = await this.interceptOnActiveFLow(async () => {
             return this.activeFlow.handleMessage(message)
         })
         if (isIntercepted) return
 
         if (await this.handleMenuMessage(message)) {
+            console.log("Message received in handleMessage1:", message);
             return
         }
 
@@ -151,6 +155,15 @@ export class UserSession {
     }
 
     private async handleMenuMessage(message: string): Promise<boolean> {
+        if (isValidFuelAddress(message)) {
+            if (message === CONTRACTS.ASSET_ETH.bits) {
+                await this.showBalance();
+                return true;
+            } else {
+                await this.startBuy(message)
+                return true;
+            }
+        }
         return false;
     }
 
@@ -173,9 +186,10 @@ export class UserSession {
     private async onFlowCompleted(flowId: FlowValues) {
         this.activeFlow = null;
         switch (flowId) {
-           /* case FlowId.INTRO_FLOW:
-                await this.showMenu()
-                break;*/
+            case FlowId.SWAP_FLOW:
+            case FlowId.BUY_FLOW:
+                await this.showBalance()
+                return true;
         }
         await this.showMenu()
     }
@@ -230,6 +244,18 @@ export class UserSession {
 
     private async setSlippage(): Promise<void> {
         await this.startFlow(new SetSlippageFlow(this.ctx, this.userId, (flowId:FlowValues) => {
+            this.onFlowCompleted(flowId);
+        }));
+    }
+
+    private async startSwap(assertIn: string, assertOut: string, amountPercentage: number | null): Promise<void> {
+        await this.startFlow(new SwapFlow(this.ctx, this.userId, this.dexClient, assertIn, assertOut, amountPercentage, (flowId:FlowValues) => {
+            this.onFlowCompleted(flowId);
+        }));
+    }
+
+    private async startBuy(assert: string | null): Promise<void> {
+        await this.startFlow(new BuyFlow(this.ctx, this.userId, this.dexClient, assert, (flowId:FlowValues) => {
             this.onFlowCompleted(flowId);
         }));
     }

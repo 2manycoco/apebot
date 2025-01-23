@@ -1,7 +1,13 @@
-import {AssetId, BN, Provider, TransactionResult, WalletUnlocked} from "fuels";
+import {
+    AssetId,
+    BN,
+    Provider,
+    TransactionResult,
+    WalletUnlocked
+} from "fuels";
 import {DexInterface} from "../dex.interface";
-import {buildPoolId, getLPAssetId, MiraAmm, ReadonlyMiraAmm} from "mira-dex-ts";
-import {futureDeadline} from "../../fuel/functions";
+import {buildPoolId, getLPAssetId, MiraAmm, PoolId, ReadonlyMiraAmm} from "mira-dex-ts";
+import {applySlippageBN, futureDeadline} from "../../fuel/functions";
 import {TokenInfo} from "../model";
 import {retry} from "../../utils/call_helper";
 import {CONTRACTS} from "../../fuel/asset/contracts";
@@ -12,6 +18,7 @@ dotenv.config();
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
 const MIRA_POOL_TOKEN_SYMBOL = "MIRA-LP"
+const POOL_NOT_FOUND_ERROR = "Pool not found";
 const contractId = process.env.MIRA_CONTRACT_ID;
 
 export class MiraDex implements DexInterface {
@@ -55,54 +62,47 @@ export class MiraDex implements DexInterface {
     }
 
     async getSwapAmount(assetIn: AssetId, assetOut: AssetId, amount: BN): Promise<BN> {
-        const poolId = buildPoolId(assetIn, assetOut, false);
-        const result = await retry(
-            async () => this.readonlyMiraAmm.previewSwapExactInput(assetIn, amount, [poolId])
-        );
-
-        if (!result) {
-            throw new Error(`Swap amount request failed`);
-        }
-
-        const amountOut = result[1]
-
-        if (!amountOut || !(amountOut instanceof BN) || amountOut.lte(new BN(0))) {
-            throw new Error(`Invalid swap amount returned for assetIn: ${assetIn.bits}, assetOut: ${assetOut.bits}, amount: ${amount.toString()}`);
-        }
-
-        return amountOut
+        return this.handlePoolNotFound(
+            async (pools) => this.readonlyMiraAmm.previewSwapExactInput(assetIn, amount, pools),
+            assetIn,
+            assetOut
+        ).then(([_, amountOut]) => {
+            if (!amountOut || !(amountOut instanceof BN) || amountOut.lte(new BN(0))) {
+                throw new Error(`Invalid swap amount returned for assetIn: ${assetIn.bits}, assetOut: ${assetOut.bits}, amount: ${amount.toString()}`);
+            }
+            return amountOut;
+        });
     }
 
-    async swap(assetIn: AssetId, assetOut: AssetId, amount: BN): Promise<TransactionResult> {
+    async swap(assetIn: AssetId, assetOut: AssetId, amount: BN, slippage: number): Promise<TransactionResult> {
         const amountOutMin = await this.getSwapAmount(assetIn, assetOut, amount);
+        const amountOutMinWithSlippage = applySlippageBN(amountOutMin, slippage);
 
-        const commissionPercentage = parseFloat(process.env.FEE_AMOUNT_PECENT);
-        const commissionAmount = amountOutMin.mul(new BN(commissionPercentage * 1000)).div(new BN(1000));
-
-        const adjustedAmountOutMin = amountOutMin.sub(commissionAmount);
-
-        if (adjustedAmountOutMin.lte(new BN(0))) {
+        if (amountOutMinWithSlippage.lte(new BN(0))) {
             throw new Error('Adjusted amountOutMin is less than or equal to 0 after subtracting commission.');
         }
 
         const deadline = await futureDeadline(this.provider);
-        const poolId = buildPoolId(assetIn, assetOut, false);
         const txParams = {
             gasLimit: 999999,
             maxFee: 999999,
         };
 
-        const txRequest = await this.miraAmm.swapExactInput(
-            amount,
+        const txRequest = await this.handlePoolNotFound(
+            async (pools) => this.miraAmm.swapExactInput(
+                amount,
+                assetIn,
+                amountOutMinWithSlippage,
+                pools,
+                deadline,
+                txParams
+            ),
             assetIn,
-            adjustedAmountOutMin,
-            [poolId],
-            deadline,
-            txParams
+            assetOut
         );
 
         const txCost = await this.wallet.getTransactionCost(txRequest);
-        txRequest.gasLimit = txCost.gasUsed;
+        txRequest.gasLimit = txCost.gasUsed.add(new BN(10000));
         txRequest.maxFee = txCost.maxFee;
         await this.wallet.fund(txRequest, txCost);
 
@@ -112,21 +112,41 @@ export class MiraDex implements DexInterface {
     }
 
     async getRate(assetIn: AssetId, assetOut: AssetId): Promise<number> {
-        const poolId = buildPoolId(assetIn, assetOut, false);
-        const result = await retry(
-            async () => await this.readonlyMiraAmm.getCurrentRate(assetIn, [poolId])
-        );
+        return this.handlePoolNotFound(
+            async (pools) => this.readonlyMiraAmm.getCurrentRate(assetIn, pools),
+            assetIn,
+            assetOut
+        ).then(([rate, assetInDecimals, assetOutDecimals]) => {
+            if (rate <= 0) {
+                throw new Error(`Invalid rate returned for assetIn: ${assetIn.bits}, assetOut: ${assetOut.bits}`);
+            }
 
-        if (!result) {
-            throw new Error(`Rate request failed for assetIn: ${assetIn.bits}, assetOut: ${assetOut.bits}`);
-        }
-
-        const [rate, assetInDecimals, assetOutDecimals] = result;
-
-        if (rate <= 0) {
-            throw new Error(`Invalid rate returned for assetIn: ${assetIn.bits}, assetOut: ${assetOut.bits}`);
-        }
-
-        return rate;
+            const scaleFactor = Math.pow(10, assetOutDecimals - assetInDecimals);
+            return rate * scaleFactor;
+        });
     }
+
+    private createEthRoute(assetIn: AssetId, assetOut: AssetId): PoolId[] {
+        const poolInEthId = buildPoolId(assetIn, CONTRACTS.ASSET_ETH, false);
+        const poolOutEthId = buildPoolId(assetOut, CONTRACTS.ASSET_ETH, false);
+        return [poolInEthId, poolOutEthId]
+    }
+
+    private async handlePoolNotFound<T>(
+        fn: (pools: PoolId[]) => Promise<T>,
+        assetIn: AssetId,
+        assetOut: AssetId
+    ): Promise<T> {
+        const directPool = [buildPoolId(assetIn, assetOut, false)];
+        try {
+            return await retry(() => fn(directPool));
+        } catch (error: any) {
+            if (error.message === POOL_NOT_FOUND_ERROR) {
+                const ethRoute = this.createEthRoute(assetIn, assetOut);
+                return await retry(() => fn(ethRoute));
+            }
+            throw error;
+        }
+    }
+
 }

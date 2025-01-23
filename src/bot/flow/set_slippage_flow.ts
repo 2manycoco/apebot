@@ -57,7 +57,7 @@ export class SetSlippageFlow extends Flow {
         if (this.step !== "SELECTING") return false;
 
         const enteredValue = parseFloat(message);
-        if (isNaN(enteredValue) || enteredValue < 0 || enteredValue > 75) {
+        if (isNaN(enteredValue) || enteredValue < 0.1 || enteredValue > 75) {
             await this.ctx.reply(Strings.SET_SLIPPAGE_PERCENTAGE_ERROR, {
                 parse_mode: "Markdown",
             });

@@ -21,8 +21,7 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
     MENU_TEXT: `
 *Wallet:* \`%s\`
 
-*Balance:* \`%s %s\`
-`,
+*Balance:* \`%s %s\``,
     MENU_BUTTON_POSITIONS: "📈 Positions",
     MENU_BUTTON_BALANCE: "💰 Balance",
     MENU_BUTTON_BUY: "💸 BUY",
@@ -36,8 +35,7 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
 *Total:* \`%s %s \`
 `,
     WALLET_PK_TEXT: `
-*Wallet PK:* \`%s\`
-`,
+*Wallet PK:* \`%s\``,
 
     INVALID_ADDRESS_TEXT: "Invalid address",
     BUTTON_CANCEL: "Cancel",
@@ -51,10 +49,13 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
     PERCENT_50: "50%",
     PERCENT_100: "100%",
 
+    AMOUNT_0_002: "0.002 ETH",
+    AMOUNT_0_005: "0.005 ETH",
+    AMOUNT_0_01: "0.01 ETH",
+
     WITHDRAW_INPUT_TEXT: `
 Balance: %s %s
-Enter your Fuel wallet address to withdraw:
-    `,
+Enter your Fuel wallet address to withdraw:`,
     WITHDRAW_INSUFFICIENT_FUNDS_TEXT: "Insufficient funds to withdraw.",
     WITHDRAW_SUCCESS_TEXT: "Funds have been successfully withdrawn.",
     WITHDRAW_AMOUNT_TEXT: "Specify how much to withdraw or enter 100%.",
@@ -66,10 +67,26 @@ Enter your Fuel wallet address to withdraw:
     SET_SLIPPAGE_PERCENTAGE_ERROR: "Invalid value. Please enter a number between 0 and 75.",
     SET_SLIPPAGE_SUCCESS: "Slippage successfully set to %s%.",
 
-    SELL_START_TEXT: "Balance: %s %s. Specify the percentage to sell or choose one of the options.",
-    SELL_INSUFFICIENT_FUNDS_TEXT: "Insufficient funds to sell.",
-    SELL_PERCENTAGE_ERROR: "Invalid value. Please enter a number between 1 and 100.",
-    SELL_SUCCESS: "Successfully sold.",
+    SWAP_START_TEXT: `
+*Swap %s -> %s*
+
+Available: *%s* %s (%s %s)`,
+    SWAP_INSUFFICIENT_FUNDS_TEXT: "Insufficient funds to swap.",
+    SWAP_PERCENTAGE_ERROR: "Invalid value. Please enter a number between 1 and 100.",
+    SWAP_CONFIRMATION_TEXT: "*%s %s* -> *%s %s*",
+    SWAP_SUCCESS: "Transaction completed successfully!",
+
+    BUY_ENTER_ASSET: "Please enter the contract address of the token you want to buy:",
+    BUY_ENTER_ASSET_ERROR: "Invalid contract address. Please try again.",
+    BUY_START_TEXT: `
+Token: *%s* (%s USDC)
+Available: *%s ETH*
+
+Enter the amount to spend or choose from the options below:`,
+    BUY_AMOUNT_ERROR: "Invalid amount. Please enter a valid amount of ETH less than or equal to your balance.",
+    BUY_CONFIRMATION_TEXT: "*%s ETH* -> *%s %s*.\n\nDo you want to proceed?",
+    BUY_SUCCESS: "Transaction completed successfully!",
+    BUY_INSUFFICIENT_FUNDS_TEXT: "You have insufficient ETH to make a purchase.",
 } as const;
 
 export function formatMessage(template: string, ...args: any[]): string {

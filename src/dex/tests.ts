@@ -81,7 +81,7 @@ async function testDexClient() {
         }
         console.log(`Token Info for ${CONTRACTS.ASSET_FAIRY.bits}:`, tokenInfoFairy);
 
-        console.log(`Testing transfer ${transferAsset.symbol} to ${transferAddress}`);
+        /*console.log(`Testing transfer ${transferAsset.symbol} to ${transferAddress}`);
         await transferWithFeeAdjustment(wallet, transferAddress, transferAsset.bits, balanceBN);
         console.log(`Transfer successful`);
 
@@ -91,9 +91,8 @@ async function testDexClient() {
             console.log("Testing etBalance after transfer Failed");
             return
         }
-        console.log(`Balance: ${balance}`);
+        console.log(`Balance: ${balance}`);*/
 
-        /*
         console.log("Testing calculateSwapAmount...");
         const calculatedAmount = await dexClient.calculateSwapAmount(assetIn, assetOut, swapAmount);
         if (calculatedAmount == null) {
@@ -106,13 +105,13 @@ async function testDexClient() {
         );
 
         console.log("Testing swap...");
-        const swapResult = await dexClient.swap(assetIn, assetOut, swapAmount);
+        const swapResult = await dexClient.swap(assetIn, assetOut, swapAmount, 1);
         if (swapResult == null) {
             console.log("Testing swap Failed");
             return
         }
         console.log("Swap successfully");
-        */
+
 
         console.log("All methods executed successfully.");
     } catch (error) {

@@ -10,6 +10,7 @@ import {withProgress} from "../help_functions";
 import {isValidFuelAddress, transferWithFeeAdjustment} from "../../fuel/functions";
 import {retry} from "../../utils/call_helper";
 import {TokenInfo} from "../../dex/model";
+import {replyConfirmMessage} from "../session_message_builder";
 
 export class WithdrawFlow extends Flow {
     private userWallet: WalletUnlocked;
@@ -149,17 +150,9 @@ export class WithdrawFlow extends Flow {
         const formattedAddress = `*${this.enteredAddress!.slice(0, 4)}*${this.enteredAddress!.slice(4, 7)}...${this.enteredAddress!.slice(-7, -4)}*${this.enteredAddress!.slice(-4)}*`;
         const confirmationMessage = `${this.transferAmount} ${this.assetInfo.symbol} -> ${formattedAddress}`;
 
+        this.step = "CONFIRMATION";
         await this.handleMessageResponse(async () => {
-            this.step = "CONFIRMATION";
-            return await this.ctx.reply(confirmationMessage, {
-                parse_mode: "Markdown",
-                ...Markup.inlineKeyboard([
-                    [
-                        Markup.button.callback(Strings.BUTTON_CANCEL, Actions.CANCEL),
-                        Markup.button.callback(Strings.BUTTON_ACCEPT, Actions.ACCEPT),
-                    ],
-                ]),
-            });
+            return await replyConfirmMessage(this.ctx, confirmationMessage);
         });
     }
 

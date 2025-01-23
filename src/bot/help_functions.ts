@@ -31,6 +31,38 @@ export async function withProgress<T>(
     }
 }
 
-export const escapeMarkdownV2 = (text: string): string => {
-    return text.replace(/([*_`\[\]()~>#+\-=|{}.!\\])/g, '\\$1');
-};
+
+export function formatTokenNumber(num: number): string {
+    if (num <= 0) {
+        throw new Error("The number should be positive.");
+    }
+
+    if (num > 1000) {
+        return Math.floor(num).toString(); // Без десятичных
+    } else if (num > 100) {
+        // Оставляем одну десятичную часть
+        const parts = num.toString().split(".");
+        return parts[0] + (parts[1] ? "." + parts[1].slice(0, 1) : "");
+    } else if (num > 10) {
+        // Оставляем три десятичные части
+        const parts = num.toString().split(".");
+        return parts[0] + (parts[1] ? "." + parts[1].slice(0, 3) : "");
+    } else if (num > 1) {
+        // Оставляем четыре десятичные части
+        const parts = num.toString().split(".");
+        return parts[0] + (parts[1] ? "." + parts[1].slice(0, 4) : "");
+    } else {
+        // Если меньше 1, ищем первое ненулевое число после точки
+        const parts = num.toString().split(".");
+        const fractional = parts[1] || ""; // Десятичная часть
+        let significantIndex = fractional.search(/[1-9]/);
+
+        if (significantIndex === -1) {
+            return "0"; // Если число состоит только из нулей
+        }
+
+        // Показываем первое ненулевое число и еще 2 цифры
+        const truncated = fractional.slice(0, significantIndex + 3);
+        return `0.${truncated}`;
+    }
+}
