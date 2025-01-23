@@ -6,13 +6,12 @@ dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
 
 export const Strings = {
+    INTRODUCE_TEXT: `
+    Thank you for choosing us, and welcome onboard to the first trading bot on Fuel! 🚀
 
-    INTO_TEXT: `
-    Thank you for choosing us, and welcome onboard! 🚀
+By pressing the *Continue* button, your internal wallet will be generated. This wallet is secure as long as you store your secret phrase in a safe place—never share it with anyone.
 
-By pressing the Continue button, your internal wallet will be generated. This wallet is secure as long as you store your secret phrase in a safe place—never share it with anyone.
-
-By using this bot, you agree to our Terms and Conditions and the Terms of Use for Telegram Mini Apps.  
+By using this bot, you agree to our *Terms and Conditions* and the Terms of Use for *Telegram Mini Apps*.  
 For more details, feel free to explore our [📖 ApeBot Documentation](${process.env.DOC_URL}).
 
 If you have any questions, reach out to us:
@@ -52,8 +51,6 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
     PERCENT_25: "25%",
     PERCENT_50: "50%",
     PERCENT_100: "100%",
-
-    INTRODUCE_TEXT: `This is the start message. Check this link: [LinkedIn](https://www.linkedin.com/in/antiglobalist/)`,
 
     WITHDRAW_INPUT_TEXT: "Enter your Fuel wallet address to withdraw ETH:",
     WITHDRAW_INSUFFICIENT_FUNDS_TEXT: "Insufficient funds to withdraw.",
