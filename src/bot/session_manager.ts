@@ -119,5 +119,4 @@ export class SessionManager {
         }, 60 * 60 * 1000); // Run every 1 hour
     }
 
-
 }

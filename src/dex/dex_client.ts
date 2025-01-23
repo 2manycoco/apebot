@@ -163,7 +163,7 @@ export class DexClient {
         };
     }
 
-    private async getTokenAmount(asset: string, amount: BN): Promise<number> {
+    async getTokenAmount(asset: string, amount: BN): Promise<number> {
         const tokenInfo = await this.getTokenInfo(asset);
         const value = parseFloat(amount.toString()) / Math.pow(10, tokenInfo.decimals);
 
@@ -174,7 +174,7 @@ export class DexClient {
         return value;
     }
 
-    private async getTokenAmountBN(asset: string, amount: number): Promise<BN> {
+    async getTokenAmountBN(asset: string, amount: number): Promise<BN> {
         const tokenInfo = await retry(async () => this.getTokenInfo(asset));
         const decimals = tokenInfo.decimals;
 

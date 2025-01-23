@@ -34,7 +34,7 @@ export class IntroduceFlow extends Flow {
 
     public async handleActionInternal(action: ActionValues): Promise<boolean> {
         switch (action) {
-            case Actions.ACCEPT:
+            case Actions.CONTINUE:
                 await this.userManager.acceptTerms();
                 this.isUserAccept = true
                 return Promise.resolve(true);

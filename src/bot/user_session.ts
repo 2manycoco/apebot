@@ -101,7 +101,9 @@ export class UserSession {
             return
         }
 
-        await this.onCommandStart()
+        await this.handleUserTerms(async () => {
+            return await this.onCommandStart()
+        });
     }
 
     private async handleMenuAction(action: ActionValues): Promise<boolean> {
@@ -143,7 +145,9 @@ export class UserSession {
             return
         }
 
-        await this.onCommandStart()
+        await this.handleUserTerms(async () => {
+            return await this.onCommandStart()
+        });
     }
 
     private async handleMenuMessage(message: string): Promise<boolean> {
@@ -219,7 +223,7 @@ export class UserSession {
     }
 
     private async withdrawFunds(): Promise<void> {
-        await this.startFlow(new WithdrawFlow(this.ctx, this.userId, this.wallet, this.dexClient, (flowId:FlowValues) => {
+        await this.startFlow(new WithdrawFlow(this.ctx, this.userId, this.wallet, this.dexClient, TRADE_ASSET.bits, (flowId:FlowValues) => {
             this.onFlowCompleted(flowId);
         }));
     }

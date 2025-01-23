@@ -1,4 +1,3 @@
-
 import dotenv from "dotenv";
 import path from "node:path";
 
@@ -52,11 +51,16 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
     PERCENT_50: "50%",
     PERCENT_100: "100%",
 
-    WITHDRAW_INPUT_TEXT: "Enter your Fuel wallet address to withdraw ETH:",
+    WITHDRAW_INPUT_TEXT: `
+Balance: %s %s
+Enter your Fuel wallet address to withdraw:
+    `,
     WITHDRAW_INSUFFICIENT_FUNDS_TEXT: "Insufficient funds to withdraw.",
     WITHDRAW_SUCCESS_TEXT: "Funds have been successfully withdrawn.",
-    WITHDRAW_AMOUNT_TEXT: "Specify how much to withdraw or enter a percentage.",
+    WITHDRAW_AMOUNT_TEXT: "Specify how much to withdraw or enter 100%.",
     WITHDRAW_PERCENTAGE_ERROR: "Invalid percentage. Please enter a value between 1 and 100.",
+    WITHDRAW_AMOUNT_ERROR: "Insufficient funds for withdrawal",
+    WITHDRAW_INPUT_AMOUNT_ERROR: "Invalid input",
 
     SET_SLIPPAGE_START_TEXT: "Current value: %s%. Choose a slippage percentage or enter your own.",
     SET_SLIPPAGE_PERCENTAGE_ERROR: "Invalid value. Please enter a number between 0 and 75.",
