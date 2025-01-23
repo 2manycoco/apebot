@@ -6,6 +6,11 @@ import {AssetId, BN, Provider, WalletUnlocked} from "fuels";
 import {retry} from "../utils/call_helper";
 import {TokenInfo} from "./model";
 import {getVerifiedAssets} from "../fuel/asset/verified_assets_provider";
+import dotenv from "dotenv";
+import path from "node:path";
+import {MIN_OPERATION_VALUE} from "../fuel/constants";
+
+dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
 export class DexClient {
     private wallet: WalletUnlocked
@@ -32,12 +37,12 @@ export class DexClient {
         return maxAmount / Math.pow(10, decimalsOut);
     }
 
-    async getBalance(asset: string): Promise<number> {
+    async getBalance(asset: string): Promise<[number, BN]> {
         const amountBN = await retry(
             async () => await this.wallet.getBalance(asset)
         );
-
-        return await this.getTokenAmount(asset, amountBN);
+        const amount = await this.getTokenAmount(asset, amountBN)
+        return [amount, amountBN];
     }
 
     async getBalances(): Promise<Array<[string, string, string]>> {
@@ -160,7 +165,13 @@ export class DexClient {
 
     private async getTokenAmount(asset: string, amount: BN): Promise<number> {
         const tokenInfo = await this.getTokenInfo(asset);
-        return parseFloat(amount.toString()) / Math.pow(10, tokenInfo.decimals);
+        const value = parseFloat(amount.toString()) / Math.pow(10, tokenInfo.decimals);
+
+        if (value < MIN_OPERATION_VALUE) {
+            return 0;
+        }
+
+        return value;
     }
 
     private async getTokenAmountBN(asset: string, amount: number): Promise<BN> {

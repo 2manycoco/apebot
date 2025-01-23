@@ -5,6 +5,7 @@ import {ActionValues} from "../actions";
 import {UserManager} from "../user_manager";
 import {Message} from "@telegraf/types";
 import {FlowValues} from "./flow_ids";
+import {retry} from "../../utils/call_helper";
 
 export abstract class Flow {
     protected userId: number;
@@ -34,9 +35,9 @@ export abstract class Flow {
      * @param action The action string received from the button callback.
      */
     public async handleAction(action: ActionValues): Promise<boolean> {
-        await this.handleActionInternal(action)
+        const result = await this.handleActionInternal(action)
         await this.checkFinished()
-        return Promise.resolve(true)
+        return Promise.resolve(result)
     }
 
     public abstract handleActionInternal(action: ActionValues): Promise<boolean>;
@@ -46,9 +47,9 @@ export abstract class Flow {
      * @param message The message or input from the user.
      */
     public async handleMessage(message: string): Promise<boolean> {
-        await this.handleMessageInternal(message)
+        const result = await this.handleMessageInternal(message)
         await this.checkFinished()
-        return Promise.resolve(true)
+        return Promise.resolve(result)
     }
 
     public abstract handleMessageInternal(message: string): Promise<boolean>;
@@ -67,7 +68,9 @@ export abstract class Flow {
     /**
      * Cleans up the Flow if the user cancels it or completes it.
      */
-    public abstract cleanup(): Promise<void>
+    public async cleanup(): Promise<void> {
+        await this.clearMessages()
+    }
 
     /**
      * Returns the identifier of the Flow.
@@ -86,7 +89,9 @@ export abstract class Flow {
     protected async clearMessages(): Promise<void> {
         for (const messageId of this.sentMessageIds) {
             try {
-                await this.ctx.deleteMessage(messageId);
+                await retry(
+                    async () => await this.ctx.deleteMessage(messageId), 10
+                );
             } catch (error) {
                 console.error(`Failed to delete message ${messageId}:`, error.message);
                 await this.logger.e("clearMessages", error.message);

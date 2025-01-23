@@ -5,6 +5,7 @@ import {SessionManager} from "./session_manager";
 import {handleUserError} from "./help_functions";
 import dotenv from "dotenv";
 import path from "node:path";
+import {message} from "telegraf/filters";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -38,6 +39,18 @@ app_telegram_bot.action(Object.values(Actions), async (ctx) => {
 
         // Set action for the session
         await session.handleAction(action);
+    });
+});
+
+// Handle text messages
+app_telegram_bot.on('message', async (ctx) => {
+    await handleUserInteraction(ctx, async (session) => {
+        if ('text' in ctx.message) {
+            const userText = ctx.message.text;
+            await session.handleMessage(userText);
+        } else {
+            console.warn('Received a non-text message, ignoring.');
+        }
     });
 });
 

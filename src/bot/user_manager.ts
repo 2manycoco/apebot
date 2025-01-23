@@ -29,4 +29,25 @@ export class UserManager {
             await this.logger.e("terms_accept_error", error.message)
         }
     }
+
+    async getSlippage(): Promise<number> {
+        try {
+            const user = await this.userRepository.getUserById(this.userId);
+            return user.slippage ?? 0;
+        } catch (error) {
+            await this.logger.e("get_slippage_error", error.message);
+            throw new Error("Failed to get slippage");
+        }
+    }
+
+    async saveSlippage(newSlippage: number): Promise<void> {
+        try {
+            const user = await this.userRepository.getUserById(this.userId);
+            user.slippage = newSlippage;
+            await this.userRepository.saveUser(user);
+        } catch (error) {
+            await this.logger.e("save_slippage_error", error.message);
+            throw new Error("Failed to save slippage");
+        }
+    }
 }

@@ -1,5 +1,6 @@
 import {Context} from "telegraf";
 import {ProgressAnimation} from "./widget/progress_animation";
+import {Address} from "fuels";
 
 export async function handleUserError(ctx: Context, error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
@@ -16,11 +17,20 @@ export async function replyProgress(ctx: Context): Promise<ProgressAnimation> {
     return animation
 }
 
-export async function withProgress(
+export async function withProgress<T>(
     ctx: Context,
-    process: () => Promise<void>
-): Promise<void> {
+    process: () => Promise<T>
+): Promise<T> {
     const progress = await replyProgress(ctx)
-    await process()
-    await progress.stopAnimation()
+    try {
+        return await process()
+    } catch (e) {
+        throw e
+    } finally {
+        await progress.stopAnimation()
+    }
 }
+
+export const escapeMarkdownV2 = (text: string): string => {
+    return text.replace(/([*_`\[\]()~>#+\-=|{}.!\\])/g, '\\$1');
+};

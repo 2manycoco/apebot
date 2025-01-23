@@ -1,5 +1,6 @@
 import {Context} from "telegraf";
 import {Logger} from "../../utils/logger";
+import {retry} from "../../utils/call_helper";
 
 export class ProgressAnimation {
     private progressFrames = [
@@ -12,7 +13,8 @@ export class ProgressAnimation {
     private messageId: number | undefined;
     private intervalId: NodeJS.Timeout | undefined;
 
-    constructor(private ctx: Context) { }
+    constructor(private ctx: Context) {
+    }
 
     // Start the animation
     public async startAnimation(): Promise<void> {
@@ -21,7 +23,7 @@ export class ProgressAnimation {
         let frameIndex = 0;
         this.intervalId = setInterval(async () => {
             try {
-                if(!this.intervalId) return
+                if (!this.intervalId) return
                 frameIndex = (frameIndex + 1) % this.progressFrames.length;
                 await this.ctx.telegram.editMessageText(
                     this.ctx.chat.id,
@@ -44,9 +46,11 @@ export class ProgressAnimation {
 
         try {
             if (this.messageId) {
-                await this.ctx.deleteMessage(this.messageId);
+                await retry(
+                    async () => await this.ctx.deleteMessage(this.messageId), 5
+                );
             }
-        } catch(e){
+        } catch (e) {
             await Logger.getInstance().e("delete_progress_message", e.message)
         }
     }

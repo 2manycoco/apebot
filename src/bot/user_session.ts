@@ -11,10 +11,12 @@ import {UserManager} from "./user_manager";
 import {withProgress} from "./help_functions";
 import {IntroduceFlow} from "./flow/introduce_flow";
 import {TRADE_ASSET} from "../fuel/asset/contracts";
-import {replyBalance, replyMenu, replyWalletPK} from "./message_builder";
+import {replyBalance, replyMenu, replyWalletPK} from "./session_message_builder";
 import dotenv from "dotenv";
 import path from "node:path";
 import {FlowId, FlowValues} from "./flow/flow_ids";
+import {WithdrawFlow} from "./flow/withdraw_flow";
+import {SetSlippageFlow} from "./flow/set_slippage_flow";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -110,12 +112,15 @@ export class UserSession {
             case Actions.MAIN_WALLET_PK:
                 await this.showWalletPK();
                 return true;
-            /* case Actions.MAIN_WITHDRAW_FUNDS:
+             case Actions.MAIN_WITHDRAW_FUNDS:
                  await this.withdrawFunds();
-                 break;
-             case Actions.MAIN_VIEW_POSITIONS:
+                 return true;
+            case Actions.MAIN_SLIPPAGE:
+                await this.setSlippage();
+                return true;
+             /*case Actions.MAIN_VIEW_POSITIONS:
                  await this.viewPositions();
-                 break;*/
+                  return true;*/
             default:
                 return false;
         }
@@ -164,10 +169,11 @@ export class UserSession {
     private async onFlowCompleted(flowId: FlowValues) {
         this.activeFlow = null;
         switch (flowId) {
-            case FlowId.INTRO_FLOW:
+           /* case FlowId.INTRO_FLOW:
                 await this.showMenu()
-                break;
+                break;*/
         }
+        await this.showMenu()
     }
 
     // ---------- Main simple action ----------
@@ -176,7 +182,8 @@ export class UserSession {
         const walletAddress = this.wallet.address.toString()
         let amount: number
         await withProgress(this.ctx, async () => {
-            amount = await this.dexClient.getBalance(TRADE_ASSET.bits);
+            const [responseAmount] = await this.dexClient.getBalance(TRADE_ASSET.bits);
+            amount = responseAmount
         })
 
         await replyMenu(this.ctx, walletAddress, amount, TRADE_ASSET.symbol)
@@ -209,6 +216,18 @@ export class UserSession {
     private async showWalletPK(): Promise<void> {
         const walletPK = this.wallet.privateKey
         await replyWalletPK(this.ctx, walletPK)
+    }
+
+    private async withdrawFunds(): Promise<void> {
+        await this.startFlow(new WithdrawFlow(this.ctx, this.userId, this.wallet, this.dexClient, (flowId:FlowValues) => {
+            this.onFlowCompleted(flowId);
+        }));
+    }
+
+    private async setSlippage(): Promise<void> {
+        await this.startFlow(new SetSlippageFlow(this.ctx, this.userId, (flowId:FlowValues) => {
+            this.onFlowCompleted(flowId);
+        }));
     }
 
     // ---------- Utils functions ----------

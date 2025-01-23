@@ -20,12 +20,12 @@ export class IntroduceFlow extends Flow {
     public async start(): Promise<void> {
         await this.handleMessageResponse(async () => {
             return await this.ctx.replyWithPhoto(
-                {url: Images.APE_LOGO},
+                {url: Images.APE_LOGO_WIDE},
                 {
                     caption: Strings.INTRODUCE_TEXT,
                     parse_mode: "Markdown",
                     ...Markup.inlineKeyboard([
-                        Markup.button.callback(Strings.INTRODUCE_BUTTON, Actions.INTRO_ACCEPT),
+                        Markup.button.callback(Strings.BUTTON_ACCEPT, Actions.ACCEPT),
                     ]),
                 }
             )
@@ -34,7 +34,7 @@ export class IntroduceFlow extends Flow {
 
     public async handleActionInternal(action: ActionValues): Promise<boolean> {
         switch (action) {
-            case Actions.INTRO_ACCEPT:
+            case Actions.ACCEPT:
                 await this.userManager.acceptTerms();
                 this.isUserAccept = true
                 return Promise.resolve(true);
@@ -44,15 +44,10 @@ export class IntroduceFlow extends Flow {
     }
 
     public handleMessageInternal(message: string): Promise<boolean> {
-        return Promise.resolve(undefined);
+        return Promise.resolve(false);
     }
 
     isFinished(): boolean {
         return this.isUserAccept;
-    }
-
-    public async cleanup(): Promise<void> {
-        await super.clearMessages();
-        return Promise.resolve();
     }
 }

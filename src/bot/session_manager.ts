@@ -68,11 +68,11 @@ export class SessionManager {
                 user = await this.userRepository.getUserById(userId);
                 if (!user) {
                     try {
+
                         wallet = WalletUnlocked.generate();
                         const walletAddress = wallet.address.toString();
                         const walletPK = EncryptionManager.encrypt(wallet.privateKey);
                         wallet.provider = this.provider;
-
                         user = {
                             telegramId: userId,
                             walletPK: walletPK,
@@ -118,4 +118,6 @@ export class SessionManager {
             }
         }, 60 * 60 * 1000); // Run every 1 hour
     }
+
+
 }

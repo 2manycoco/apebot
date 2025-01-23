@@ -6,8 +6,10 @@ import {TokenInfo} from "../model";
 import {retry} from "../../utils/call_helper";
 import {CONTRACTS} from "../../fuel/asset/contracts";
 import dotenv from "dotenv";
+import path from "node:path";
 
 dotenv.config();
+dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
 const MIRA_POOL_TOKEN_SYMBOL = "MIRA-LP"
 const contractId = process.env.MIRA_CONTRACT_ID;
@@ -73,15 +75,31 @@ export class MiraDex implements DexInterface {
 
     async swap(assetIn: AssetId, assetOut: AssetId, amount: BN): Promise<TransactionResult> {
         const amountOutMin = await this.getSwapAmount(assetIn, assetOut, amount);
-        const deadline = await futureDeadline(this.provider);
 
+        const commissionPercentage = parseFloat(process.env.FEE_AMOUNT_PECENT);
+        const commissionAmount = amountOutMin.mul(new BN(commissionPercentage * 1000)).div(new BN(1000));
+
+        const adjustedAmountOutMin = amountOutMin.sub(commissionAmount);
+
+        if (adjustedAmountOutMin.lte(new BN(0))) {
+            throw new Error('Adjusted amountOutMin is less than or equal to 0 after subtracting commission.');
+        }
+
+        const deadline = await futureDeadline(this.provider);
         const poolId = buildPoolId(assetIn, assetOut, false);
         const txParams = {
             gasLimit: 999999,
             maxFee: 999999,
         };
 
-        const txRequest = await this.miraAmm.swapExactInput(amount, assetIn, amountOutMin, [poolId], deadline, txParams);
+        const txRequest = await this.miraAmm.swapExactInput(
+            amount,
+            assetIn,
+            adjustedAmountOutMin,
+            [poolId],
+            deadline,
+            txParams
+        );
 
         const txCost = await this.wallet.getTransactionCost(txRequest);
         txRequest.gasLimit = txCost.gasUsed;
@@ -89,9 +107,8 @@ export class MiraDex implements DexInterface {
         await this.wallet.fund(txRequest, txCost);
 
         const tx = await this.wallet.sendTransaction(txRequest);
-        return await retry(
-            async () => tx.waitForResult()
-        );
+
+        return await retry(async () => tx.waitForResult());
     }
 
     async getRate(assetIn: AssetId, assetOut: AssetId): Promise<number> {

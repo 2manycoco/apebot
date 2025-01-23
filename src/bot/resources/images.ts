@@ -5,5 +5,5 @@ dotenv.config({path: path.resolve(__dirname, "../../../.env.secret")});
 
 
 export const Images = {
-    APE_LOGO: process.env.IMAGE_LOGO_APE_LOGO,
+    APE_LOGO_WIDE: process.env.IMAGE_LOGO_WIDE,
 } as const;

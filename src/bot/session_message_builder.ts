@@ -1,14 +1,9 @@
 import {Context, Markup} from "telegraf";
 import {Actions} from "./actions";
-import {Strings} from "./resources/strings";
+import {formatMessage, Strings} from "./resources/strings";
 
 export async function replyMenu(ctx: Context, walletAddress: string, amount: number, symbol: string) {
-    const message = `
-*Wallet:* \`${walletAddress}\`
-
-*Balance:* \`${amount} ${symbol}\`
-`;
-
+    const message = formatMessage(Strings.MENU_TEXT, walletAddress, amount, symbol);
     await ctx.reply(message, {
         parse_mode: "Markdown",
         ...Markup.inlineKeyboard(
@@ -22,6 +17,7 @@ export async function replyMenu(ctx: Context, walletAddress: string, amount: num
                     Markup.button.callback(Strings.MENU_BUTTON_WITHDRAW, Actions.MAIN_WITHDRAW_FUNDS),
                 ],
                 [
+                    Markup.button.callback(Strings.MENU_BUTTON_SLIPPAGE, Actions.MAIN_SLIPPAGE),
                     Markup.button.callback(Strings.MENU_BUTTON_WALLET_PK, Actions.MAIN_WALLET_PK)
                 ]
             ]
@@ -41,19 +37,14 @@ export async function replyBalance(ctx: Context, balances: Array<[string, string
     } else {
         amountFixed = sumAmount.toFixed(2)
     }
-    const message = `
-${balancesMessage}    
-    
-*Total:* \`${amountFixed}\` ${symbol}
-`;
+
+    const message = formatMessage(Strings.BALANCE_TEXT, balancesMessage, amountFixed, symbol);
 
     await ctx.reply(message, {parse_mode: "Markdown"});
 }
 
 export async function replyWalletPK(ctx: Context, walletPK: string) {
-    const message = `
-*Wallet PK:* \`${walletPK}\`
-`;
+    const message = formatMessage(Strings.WALLET_PK_TEXT, walletPK);
 
     await ctx.reply(message, {parse_mode: "Markdown"});
 }
