@@ -11,7 +11,7 @@ export const Strings = {
 
 By pressing the *Continue* button, your internal wallet will be generated. This wallet is secure as long as you store your secret phrase in a safe place—never share it with anyone.
 
-By using this bot, you agree to our *Terms and Conditions* and the Terms of Use for *Telegram Mini Apps*.  
+By using this bot, you agree to our [Terms and Conditions](https://tricky-coconut.gitbook.io/ape-bot-on-fuel/terms-and-conditions) and the Terms of Use for [Telegram Mini Apps](https://telegram.org/tos/mini-apps).  
 For more details, feel free to explore our [📖 ApeBot Documentation](${process.env.DOC_URL}).
 
 If you have any questions, reach out to us:
