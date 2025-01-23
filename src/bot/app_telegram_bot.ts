@@ -5,7 +5,6 @@ import {SessionManager} from "./session_manager";
 import {handleUserError} from "./help_functions";
 import dotenv from "dotenv";
 import path from "node:path";
-import {message} from "telegraf/filters";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 

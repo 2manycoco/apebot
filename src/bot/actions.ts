@@ -12,6 +12,7 @@ export type CommandValues = typeof Commands[CommandKeys];
 export const Actions = {
     CANCEL: "CANCEL",
     ACCEPT: "ACCEPT",
+    CONTINUE: "CONTINUE",
     PERCENT_25: "25%",
     PERCENT_50: "50%",
     PERCENT_100: "100%",

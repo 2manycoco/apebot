@@ -1,4 +1,25 @@
+
+import dotenv from "dotenv";
+import path from "node:path";
+
+dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
+
+
 export const Strings = {
+
+    INTO_TEXT: `
+    Thank you for choosing us, and welcome onboard! 🚀
+
+By pressing the Continue button, your internal wallet will be generated. This wallet is secure as long as you store your secret phrase in a safe place—never share it with anyone.
+
+By using this bot, you agree to our Terms and Conditions and the Terms of Use for Telegram Mini Apps.  
+For more details, feel free to explore our [📖 ApeBot Documentation](${process.env.DOC_URL}).
+
+If you have any questions, reach out to us:
+
+Twitter: [@apebotonfuel](${process.env.TWITTER_URL})  
+Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
+
     MENU_TEXT: `
 *Wallet:* \`%s\`
 
@@ -23,6 +44,7 @@ export const Strings = {
     INVALID_ADDRESS_TEXT: "Invalid address",
     BUTTON_CANCEL: "Cancel",
     BUTTON_ACCEPT: "Accept",
+    BUTTON_CONTINUE: "Continue",
 
     PERCENT_0_1: "0.1%",
     PERCENT_0_5: "0.5%",

@@ -25,7 +25,7 @@ export class IntroduceFlow extends Flow {
                     caption: Strings.INTRODUCE_TEXT,
                     parse_mode: "Markdown",
                     ...Markup.inlineKeyboard([
-                        Markup.button.callback(Strings.BUTTON_ACCEPT, Actions.ACCEPT),
+                        Markup.button.callback(Strings.BUTTON_CONTINUE, Actions.CONTINUE),
                     ]),
                 }
             )
