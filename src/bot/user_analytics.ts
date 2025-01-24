@@ -2,7 +2,7 @@ import {Context} from "telegraf";
 import {EventOptions} from "@amplitude/analytics-types/lib/esm/base-event";
 import AnalyticsService from "../analytics/analytics_service";
 
-export async function trackUserAnalytics(ctx: Context, eventName: string, properties?: Record<string, any>) {
+export function trackUserAnalytics(ctx: Context, eventName: string, properties?: Record<string, any>) {
     const user = ctx.from;
 
     if (!user) {
@@ -26,5 +26,5 @@ export async function trackUserAnalytics(ctx: Context, eventName: string, proper
         platform: "Telegram",
     };
 
-    await AnalyticsService.getInstance().trackUserAction(eventName, params, eventOptions)
+    AnalyticsService.getInstance().trackUserAction(eventName, params, eventOptions)
 }

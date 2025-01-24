@@ -1,5 +1,5 @@
 import {Context, Markup} from "telegraf";
-import {Actions, ActionValues, Commands, CommandValues} from "./actions";
+import {Actions, ActionValues, Commands, CommandValues, TemplateActionValues} from "./actions";
 import {DexClient} from "../dex/dex_client";
 import {WalletUnlocked} from "fuels";
 import {getUserRepository, UserRepository} from "../database/user_repository";
@@ -18,8 +18,9 @@ import {FlowId, FlowValues} from "./flow/flow_ids";
 import {WithdrawFlow} from "./flow/withdraw_flow";
 import {SetSlippageFlow} from "./flow/set_slippage_flow";
 import {SwapFlow} from "./flow/swap_flow";
-import { isValidFuelAddress } from "../fuel/functions";
+import {isValidFuelAddress} from "../fuel/functions";
 import {BuyFlow} from "./flow/buy_flow";
+import {SellFlow} from "./flow/sell_flow";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -48,7 +49,7 @@ export class UserSession {
     }
 
     async handleCommand(command: CommandValues) {
-        await trackUserAnalytics(this.ctx, "user_command", {
+        trackUserAnalytics(this.ctx, "user_command", {
             command_name: command
         })
         await this.handleUserTerms(async () => {
@@ -92,9 +93,10 @@ export class UserSession {
      * @param action The action string received from the button callback.
      */
     async handleAction(action: ActionValues): Promise<void> {
-        await trackUserAnalytics(this.ctx, "user_action", {
+        trackUserAnalytics(this.ctx, "user_action", {
             action_name: action
         })
+
         const isIntercepted = await this.interceptOnActiveFLow(async () => {
             return this.activeFlow.handleAction(action)
         })
@@ -109,6 +111,16 @@ export class UserSession {
         });
     }
 
+    async handleTemplateAction(action: TemplateActionValues): Promise<void> {
+        trackUserAnalytics(this.ctx, "user_template_action", {
+            action_name: action
+        })
+
+        await this.interceptOnActiveFLow(async () => {
+            return this.activeFlow.handleTemplateAction(action)
+        })
+    }
+
     private async handleMenuAction(action: ActionValues): Promise<boolean> {
         switch (action) {
             case Actions.MAIN_BALANCE:
@@ -117,15 +129,18 @@ export class UserSession {
             case Actions.MAIN_WALLET_PK:
                 await this.showWalletPK();
                 return true;
-             case Actions.MAIN_WITHDRAW_FUNDS:
-                 await this.withdrawFunds();
-                 return true;
+            case Actions.MAIN_WITHDRAW_FUNDS:
+                await this.withdrawFunds();
+                return true;
             case Actions.MAIN_SLIPPAGE:
                 await this.setSlippage();
                 return true;
-             case Actions.MAIN_BUY:
-                  await this.startBuy(null)
-                  return true;
+            case Actions.MAIN_BUY:
+                await this.startBuy(null)
+                return true;
+            case Actions.MAIN_SELL:
+                await this.startSell()
+                return true;
             default:
                 return false;
         }
@@ -136,7 +151,7 @@ export class UserSession {
      * @param message The message or input from the user.
      */
     async handleMessage(message: string): Promise<void> {
-        await trackUserAnalytics(this.ctx, "user_message", {
+        trackUserAnalytics(this.ctx, "user_message", {
             message: message
         })
         const isIntercepted = await this.interceptOnActiveFLow(async () => {
@@ -145,7 +160,6 @@ export class UserSession {
         if (isIntercepted) return
 
         if (await this.handleMenuMessage(message)) {
-            console.log("Message received in handleMessage1:", message);
             return
         }
 
@@ -188,6 +202,7 @@ export class UserSession {
         switch (flowId) {
             case FlowId.SWAP_FLOW:
             case FlowId.BUY_FLOW:
+            case FlowId.SELL_FLOW:
                 await this.showBalance()
                 return true;
         }
@@ -237,25 +252,31 @@ export class UserSession {
     }
 
     private async withdrawFunds(): Promise<void> {
-        await this.startFlow(new WithdrawFlow(this.ctx, this.userId, this.wallet, this.dexClient, TRADE_ASSET.bits, (flowId:FlowValues) => {
+        await this.startFlow(new WithdrawFlow(this.ctx, this.userId, this.wallet, this.dexClient, TRADE_ASSET.bits, (flowId: FlowValues) => {
             this.onFlowCompleted(flowId);
         }));
     }
 
     private async setSlippage(): Promise<void> {
-        await this.startFlow(new SetSlippageFlow(this.ctx, this.userId, (flowId:FlowValues) => {
+        await this.startFlow(new SetSlippageFlow(this.ctx, this.userId, (flowId: FlowValues) => {
             this.onFlowCompleted(flowId);
         }));
     }
 
     private async startSwap(assertIn: string, assertOut: string, amountPercentage: number | null): Promise<void> {
-        await this.startFlow(new SwapFlow(this.ctx, this.userId, this.dexClient, assertIn, assertOut, amountPercentage, (flowId:FlowValues) => {
+        await this.startFlow(new SwapFlow(this.ctx, this.userId, this.dexClient, assertIn, assertOut, amountPercentage, (flowId: FlowValues) => {
             this.onFlowCompleted(flowId);
         }));
     }
 
     private async startBuy(assert: string | null): Promise<void> {
-        await this.startFlow(new BuyFlow(this.ctx, this.userId, this.dexClient, assert, (flowId:FlowValues) => {
+        await this.startFlow(new BuyFlow(this.ctx, this.userId, this.dexClient, assert, (flowId: FlowValues) => {
+            this.onFlowCompleted(flowId);
+        }));
+    }
+
+    private async startSell(symbol: string | null = null, percentage: number | null = null): Promise<void> {
+        await this.startFlow(new SellFlow(this.ctx, this.userId, this.dexClient, symbol, percentage, (flowId: FlowValues) => {
             this.onFlowCompleted(flowId);
         }));
     }
@@ -277,7 +298,7 @@ export class UserSession {
     ): Promise<void> {
         const isAccept = await this.userManager.isAcceptTerms()
         if (!isAccept) {
-            await this.startFlow(new IntroduceFlow(this.ctx, this.userId, (flowId:FlowValues) => {
+            await this.startFlow(new IntroduceFlow(this.ctx, this.userId, (flowId: FlowValues) => {
                 this.onFlowCompleted(flowId);
             }));
         } else {

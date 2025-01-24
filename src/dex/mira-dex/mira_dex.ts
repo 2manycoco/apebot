@@ -141,7 +141,7 @@ export class MiraDex implements DexInterface {
         try {
             return await retry(() => fn(directPool));
         } catch (error: any) {
-            if (error.message === POOL_NOT_FOUND_ERROR) {
+            if (typeof error.message === "string" && error.message.includes(POOL_NOT_FOUND_ERROR)) {
                 const ethRoute = this.createEthRoute(assetIn, assetOut);
                 return await retry(() => fn(ethRoute));
             }

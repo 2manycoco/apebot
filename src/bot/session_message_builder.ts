@@ -10,16 +10,19 @@ export async function replyMenu(ctx: Context, walletAddress: string, amount: num
         ...Markup.inlineKeyboard(
             [
                 [
+                    Markup.button.callback(Strings.MENU_BUTTON_BUY, Actions.MAIN_BUY),
                     Markup.button.callback(Strings.MENU_BUTTON_POSITIONS, Actions.MAIN_VIEW_POSITIONS),
-                    Markup.button.callback(Strings.MENU_BUTTON_BALANCE, Actions.MAIN_BALANCE),
                 ],
                 [
-                    Markup.button.callback(Strings.MENU_BUTTON_BUY, Actions.MAIN_BUY),
-                    Markup.button.callback(Strings.MENU_BUTTON_WITHDRAW, Actions.MAIN_WITHDRAW_FUNDS),
+                    Markup.button.callback(Strings.MENU_BUTTON_SELL, Actions.MAIN_SELL),
+                    Markup.button.callback(Strings.MENU_BUTTON_BALANCE, Actions.MAIN_BALANCE),
                 ],
                 [
                     Markup.button.callback(Strings.MENU_BUTTON_SLIPPAGE, Actions.MAIN_SLIPPAGE),
                     Markup.button.callback(Strings.MENU_BUTTON_WALLET_PK, Actions.MAIN_WALLET_PK)
+                ],
+                [
+                    Markup.button.callback(Strings.MENU_BUTTON_WITHDRAW, Actions.MAIN_WITHDRAW_FUNDS)
                 ]
             ]
         ),

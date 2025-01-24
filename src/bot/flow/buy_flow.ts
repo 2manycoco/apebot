@@ -1,13 +1,13 @@
-import { Flow } from "./flow";
-import { Context, Markup } from "telegraf";
-import { Actions, ActionValues } from "../actions";
-import { FlowId, FlowValues } from "./flow_ids";
-import { formatMessage, Strings } from "../resources/strings";
+import {Flow} from "./flow";
+import {Context, Markup} from "telegraf";
+import {Actions, ActionValues} from "../actions";
+import {FlowId, FlowValues} from "./flow_ids";
+import {formatMessage, Strings} from "../resources/strings";
 import {formatTokenNumber, withProgress} from "../help_functions";
-import { DexClient } from "../../dex/dex_client";
-import { TokenInfo } from "../../dex/model";
-import { CONTRACTS } from "../../fuel/asset/contracts";
-import { BN } from "fuels";
+import {DexClient} from "../../dex/dex_client";
+import {TokenInfo} from "../../dex/model";
+import {CONTRACTS} from "../../fuel/asset/contracts";
+import {BN} from "fuels";
 import {replyConfirmMessage} from "../session_message_builder";
 
 export class BuyFlow extends Flow {
@@ -38,7 +38,7 @@ export class BuyFlow extends Flow {
 
     public async start(): Promise<void> {
         if (!this.asset) {
-            await this.ctx.reply(Strings.BUY_ENTER_ASSET, { parse_mode: "Markdown" });
+            await this.ctx.reply(Strings.BUY_ENTER_ASSET, {parse_mode: "Markdown"});
             return;
         }
 
@@ -52,7 +52,7 @@ export class BuyFlow extends Flow {
             this.ethBalance = ethBalance;
 
             if (ethBalance === 0) {
-                await this.ctx.reply(Strings.BUY_INSUFFICIENT_FUNDS_TEXT, { parse_mode: "Markdown" });
+                await this.ctx.reply(Strings.BUY_INSUFFICIENT_FUNDS_TEXT, {parse_mode: "Markdown"});
                 this.step = "COMPLETED";
                 return Promise.resolve(false);
             }
@@ -63,12 +63,17 @@ export class BuyFlow extends Flow {
         if (!result) return;
 
         const message = await withProgress(this.ctx, async () => {
-            const expectedTokenAmountUSDC = await this.userDexClient.calculateSwapAmount(
-                CONTRACTS.ASSET_USDC.bits,
-                this.asset!,
-                100
-            );
-            const priceUSDC = formatTokenNumber(100 / expectedTokenAmountUSDC)
+            let priceUSDC: string
+            if (this.asset! != CONTRACTS.ASSET_USDC.bits) {
+                const expectedTokenAmountUSDC = await this.userDexClient.calculateSwapAmount(
+                    CONTRACTS.ASSET_USDC.bits,
+                    this.asset!,
+                    100
+                );
+                priceUSDC = formatTokenNumber(100 / expectedTokenAmountUSDC)
+            } else {
+                priceUSDC = "1"
+            }
 
             return formatMessage(
                 Strings.BUY_START_TEXT,
@@ -96,7 +101,7 @@ export class BuyFlow extends Flow {
     public async handleMessageInternal(message: string): Promise<boolean> {
         if (this.step === "INPUT_ASSET") {
             if (!message || message.trim().length === 0) {
-                await this.ctx.reply(Strings.BUY_ENTER_ASSET_ERROR, { parse_mode: "Markdown" });
+                await this.ctx.reply(Strings.BUY_ENTER_ASSET_ERROR, {parse_mode: "Markdown"});
                 return false;
             }
 
@@ -108,7 +113,7 @@ export class BuyFlow extends Flow {
         if (this.step === "INPUT_AMOUNT") {
             const enteredValue = parseFloat(message);
             if (isNaN(enteredValue) || enteredValue <= 0 || enteredValue > this.ethBalance) {
-                await this.ctx.reply(Strings.BUY_AMOUNT_ERROR, { parse_mode: "Markdown" });
+                await this.ctx.reply(Strings.BUY_AMOUNT_ERROR, {parse_mode: "Markdown"});
                 return false;
             }
 
@@ -131,7 +136,7 @@ export class BuyFlow extends Flow {
             if (amountMap[action] !== undefined) {
                 this.amountToSpend = amountMap[action];
                 if (this.amountToSpend > this.ethBalance) {
-                    await this.ctx.reply(Strings.BUY_AMOUNT_ERROR, { parse_mode: "Markdown" });
+                    await this.ctx.reply(Strings.BUY_AMOUNT_ERROR, {parse_mode: "Markdown"});
                     return false;
                 }
                 await this.calculateAndConfirmPurchase();
@@ -149,7 +154,7 @@ export class BuyFlow extends Flow {
                 await withProgress(this.ctx, async () => {
                     const slippage = await this.userManager.getSlippage()
                     await this.userDexClient.swap(CONTRACTS.ASSET_ETH.bits, this.asset!, this.amountToSpend!, slippage);
-                    await this.ctx.reply(Strings.BUY_SUCCESS, { parse_mode: "Markdown" });
+                    await this.ctx.reply(Strings.BUY_SUCCESS, {parse_mode: "Markdown"});
                     this.step = "COMPLETED";
                 });
                 return true;
@@ -160,7 +165,7 @@ export class BuyFlow extends Flow {
     }
 
     private async calculateAndConfirmPurchase(): Promise<void> {
-        const confirmationMessage =  await withProgress(this.ctx, async () => {
+        const confirmationMessage = await withProgress(this.ctx, async () => {
             const expectedTokenAmount = await this.userDexClient.calculateSwapAmount(
                 CONTRACTS.ASSET_ETH.bits,
                 this.asset!,

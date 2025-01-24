@@ -1,4 +1,13 @@
-import {Address, BN, CoinQuantity, Provider, ScriptTransactionRequest, TransactionRequest, WalletUnlocked} from "fuels";
+import {
+    Address,
+    BN,
+    CoinQuantity,
+    Provider,
+    ScriptTransactionRequest,
+    TransactionCost,
+    TransactionRequest,
+    WalletUnlocked
+} from "fuels";
 import dotenv from "dotenv";
 import {ProviderOptions} from "@fuel-ts/account/dist/providers/provider";
 import {NETWORK_CALL_TIMEOUT, retry} from "../utils/call_helper";
@@ -48,19 +57,16 @@ export async function transferWithFeeAdjustment(
     const txRequest = new ScriptTransactionRequest();
 
     const resources = await wallet.getResourcesToSpend([
-        { amount: amountToSend, assetId },
+        {amount: amountToSend, assetId},
     ]);
     txRequest.addResources(resources);
 
     txRequest.addCoinOutput(destination, amountToSend, assetId);
 
-    const chainInfo = wallet.provider.getChain();
-    const minGas = txRequest.calculateMinGas(chainInfo);
-    const maxGas = txRequest.calculateMaxGas(chainInfo, minGas);
-
-    txRequest.maxFee = maxGas.mul(1.1);
-
-    const txCost = await wallet.getTransactionCost(txRequest);
+    const txCost = await retry(() => {
+            return setupMaxGas(txRequest, wallet)
+        }, 5
+    )
 
     const transactionFee = txCost.maxGas
     txRequest.gasLimit = transactionFee;
@@ -84,11 +90,21 @@ export async function transferWithFeeAdjustment(
         assetId
     );
 
-     await retry(async () => {
+    await retry(async () => {
         return await response.wait();
     }, 10);
 
     return Promise.resolve()
+}
+
+export async function setupMaxGas(txRequest: TransactionRequest, wallet: WalletUnlocked): Promise<TransactionCost> {
+    const chainInfo = wallet.provider.getChain();
+    const minGas = txRequest.calculateMinGas(chainInfo);
+    const maxGas = txRequest.calculateMaxGas(chainInfo, minGas);
+
+    txRequest.maxFee = maxGas.mul(1.15);
+
+    return await wallet.getTransactionCost(txRequest);
 }
 
 /**

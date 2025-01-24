@@ -24,6 +24,7 @@ export const Actions = {
     MAIN_WITHDRAW_FUNDS: "MAIN_WITHDRAW_FUNDS",
     MAIN_VIEW_POSITIONS: "MAIN_VIEW_POSITIONS",
     MAIN_BUY: "MAIN_BUY",
+    MAIN_SELL: "MAIN_SELL",
     MAIN_WALLET_PK: "MAIN_WALLET_PK",
     MAIN_SLIPPAGE: "MAIN_SLIPPAGE",
 
@@ -34,3 +35,28 @@ export const Actions = {
 
 export type ActionKeys = keyof typeof Actions;
 export type ActionValues = typeof Actions[ActionKeys];
+
+export const TemplateActions = {
+    BUY: (symbol: string, percentage?: number) => `BUY:${symbol}${percentage !== undefined ? `:${percentage}` : ""}`,
+    SELL: (symbol: string, percentage?: number) => `SELL:${symbol}${percentage !== undefined ? `:${percentage}` : ""}`,
+    parse: (action: string): TemplateActionValues | null => {
+        const pattern = /^(BUY|SELL):([^:]+)(?::(\d+))?$/; // Добавлена проверка на необязательный процент
+        const match = action.match(pattern);
+        if (match) {
+            const [_, type, symbol, percentage] = match;
+            return {
+                type: type as TemplateActionKeys,
+                symbol,
+                percentage: percentage ? parseInt(percentage, 10) : undefined,
+            };
+        }
+        return null;
+    },
+} as const;
+
+export type TemplateActionKeys = "BUY" | "SELL";
+export type TemplateActionValues = {
+    type: "BUY" | "SELL";
+    symbol: string;
+    percentage?: number;
+};

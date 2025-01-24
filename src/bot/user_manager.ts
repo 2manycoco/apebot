@@ -24,7 +24,7 @@ export class UserManager {
     async acceptTerms() {
         try {
             await this.userRepository.updateAcceptedTerms(this.userId, true);
-            await trackUserAnalytics(this.ctx, "user_terms_accepted")
+            trackUserAnalytics(this.ctx, "user_terms_accepted")
         } catch (error) {
             await this.logger.e("terms_accept_error", error.message)
         }

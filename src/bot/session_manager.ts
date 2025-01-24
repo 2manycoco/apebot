@@ -94,7 +94,7 @@ export class SessionManager {
         // Create a new session
         const newSession = new UserSession(ctx, userId, wallet, dexClient);
         this.sessions.set(userId, {session: newSession, lastActivity: new Date()});
-        await trackUserAnalytics(ctx, "user_session_started", {
+        trackUserAnalytics(ctx, "user_session_started", {
             wallet_address: wallet.address.toString()
         })
 

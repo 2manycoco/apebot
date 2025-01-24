@@ -31,7 +31,8 @@ export function setupGlobalHttpClient() {
 export async function retry<T>(
     fn: () => Promise<T>,
     retries = 15,
-    delay = 200
+    delay = 200,
+    onlyNetwork: boolean = true,
 ): Promise<T> {
     let attempt = 0;
 
@@ -39,7 +40,7 @@ export async function retry<T>(
         try {
             return await fn();
         } catch (error: any) {
-            if (error.cause?.code !== "ECONNRESET") {
+            if (onlyNetwork && error.cause?.code !== "ECONNRESET") {
                 throw error;
             }
 
@@ -54,4 +55,12 @@ export async function retry<T>(
     }
 
     throw new Error("Retry failed after max attempts");
+}
+
+export async function retryAll<T>(
+    fn: () => Promise<T>,
+    retries = 15,
+    delay = 200
+): Promise<T> {
+    return retry(fn, retries, delay, false);
 }

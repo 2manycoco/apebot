@@ -1,5 +1,5 @@
 import {Telegraf, Context} from "telegraf";
-import {Actions, ActionValues, Commands, CommandValues} from "./actions";
+import {Actions, ActionValues, Commands, CommandValues, TemplateActions} from "./actions";
 import {UserSession} from "./user_session";
 import {SessionManager} from "./session_manager";
 import {handleUserError} from "./help_functions";
@@ -27,7 +27,7 @@ app_telegram_bot.command(Object.values(Commands), async (ctx) => {
     });
 });
 
-// Handle button clicks
+/*// Handle button clicks
 app_telegram_bot.action(Object.values(Actions), async (ctx) => {
     await handleUserInteraction(ctx, async (session) => {
         const action = ctx.match?.[0] as ActionValues;
@@ -39,7 +39,33 @@ app_telegram_bot.action(Object.values(Actions), async (ctx) => {
         // Set action for the session
         await session.handleAction(action);
     });
+});*/
+
+// Handle button clicks
+app_telegram_bot.action(/.*/, async (ctx) => {
+    await handleUserInteraction(ctx, async (session) => {
+        const action = ctx.match?.[0];
+
+        if (!action) {
+            await ctx.reply("Unable to process action. Please try again.");
+            return;
+        }
+
+        const parsedTemplate = TemplateActions.parse(action);
+        if (parsedTemplate) {
+            await session.handleTemplateAction(parsedTemplate);
+            return;
+        }
+
+        if (Object.values(Actions).includes(action as ActionValues)) {
+            await session.handleAction(action as ActionValues);
+            return;
+        }
+
+        await ctx.reply("Unknown action or command format. Please try again.");
+    });
 });
+
 
 // Handle text messages
 app_telegram_bot.on('message', async (ctx) => {

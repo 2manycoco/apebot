@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import {retry, setupGlobalHttpClient} from "./utils/call_helper";
+import {retry, retryAll, setupGlobalHttpClient} from "./utils/call_helper";
 import {startTelegramBot} from "./bot/app_telegram_bot";
 import {AppDataSource} from "./database/database";
 import {SessionManager} from "./bot/session_manager";
@@ -17,14 +17,14 @@ async function application() {
         setupGlobalHttpClient();
 
         // Initialize analytics
-        await retry(async () => {
+        await retryAll(async () => {
             AnalyticsService.getInstance()
             console.log("Analytics connected successfully.");
         });
 
         if (process.env.USE_LOCAL_STORAGE === "false") {
             // Initialize database
-            await retry(async () => {
+            await retryAll(async () => {
                 const dbInstance = await AppDataSource.initialize();
                 if (!dbInstance) {
                     throw new Error("Failed to initialize database instance.");
@@ -34,7 +34,7 @@ async function application() {
         }
 
         // Initialize RPC (Session Manager)
-        await retry(async () => {
+        await retryAll(async () => {
             const sessionManagerInstance = await SessionManager.getInstance();
             if (!sessionManagerInstance) {
                 throw new Error("Failed to initialize RPC instance (SessionManager).");
@@ -48,7 +48,7 @@ async function application() {
 
         // Start Telegram bot
         console.log("Starting the Telegram bot");
-        await retry(async () => {
+        await retryAll(async () => {
             await AnalyticsService.getInstance().trackEvent("bot_start")
             await startTelegramBot();
         });

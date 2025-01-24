@@ -1,11 +1,11 @@
 import {Context} from "telegraf";
 import {Logger} from "../../utils/logger";
 import AnalyticsService from "../../analytics/analytics_service";
-import {ActionValues} from "../actions";
+import {ActionValues, TemplateActionValues} from "../actions";
 import {UserManager} from "../user_manager";
 import {Message} from "@telegraf/types";
 import {FlowValues} from "./flow_ids";
-import {retry} from "../../utils/call_helper";
+import {retry, retryAll} from "../../utils/call_helper";
 
 export abstract class Flow {
     protected userId: number;
@@ -41,6 +41,16 @@ export abstract class Flow {
     }
 
     public abstract handleActionInternal(action: ActionValues): Promise<boolean>;
+
+    public async handleTemplateAction(action: TemplateActionValues): Promise<boolean> {
+        const result = await this.handleTemplateActionInternal(action)
+        await this.checkFinished()
+        return Promise.resolve(result)
+    }
+
+    public handleTemplateActionInternal(action: TemplateActionValues): Promise<boolean> {
+        return Promise.resolve(false)
+    }
 
     /**
      * Handles user input during the Flow.
@@ -89,8 +99,8 @@ export abstract class Flow {
     protected async clearMessages(): Promise<void> {
         for (const messageId of this.sentMessageIds) {
             try {
-                await retry(
-                    async () => await this.ctx.deleteMessage(messageId), 10
+                await retryAll(
+                    async () => await this.ctx.deleteMessage(messageId), 5
                 );
             } catch (error) {
                 console.error(`Failed to delete message ${messageId}:`, error.message);

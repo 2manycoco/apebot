@@ -74,7 +74,13 @@ export class SwapFlow extends Flow {
         }
 
         const message = await withProgress(this.ctx, async () => {
-            const assertInUSDC = await this.userDexClient.getRate(this.assetIn, CONTRACTS.ASSET_USDC.bits) * this.assetInBalance
+            let usdcRate: number
+            if (this.assetIn != CONTRACTS.ASSET_USDC.bits) {
+                usdcRate = await this.userDexClient.getRate(this.assetIn, CONTRACTS.ASSET_USDC.bits)
+            } else {
+                usdcRate = 1
+            }
+            const assertInUSDC = usdcRate * this.assetInBalance
             return formatMessage(
                 Strings.SWAP_START_TEXT,
                 this.assetInInfo.symbol,
