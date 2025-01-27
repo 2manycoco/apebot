@@ -1,4 +1,5 @@
 # ApeBot on Fuel 🚀
+![photo_2025-01-20_03-31-03](https://github.com/user-attachments/assets/082c1e8e-c36f-44fc-8d13-7a4784951f37)
 
 ApeBot is a groundbreaking trading bot built on the Fuel blockchain. Designed to offer seamless trading with speed and efficiency, ApeBot provides an enhanced experience compared to traditional browser-based trading. With features like real-time PnL (Profit and Loss) tracking, a user-friendly interface, and instant execution, ApeBot is your go-to tool for trading on Fuel.
 
