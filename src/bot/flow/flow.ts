@@ -99,7 +99,7 @@ export abstract class Flow {
     protected async clearMessages(): Promise<void> {
         for (const messageId of this.sentMessageIds) {
             try {
-                await retryAll(
+                await retry(
                     async () => await this.ctx.deleteMessage(messageId), 5
                 );
             } catch (error) {

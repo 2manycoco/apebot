@@ -49,7 +49,7 @@ class AnalyticsService {
      * @param errorMessage The error message
      * @param properties Additional properties related to the error
      */
-    public async trackError(errorName: string, errorMessage: string, properties?: Record<string, any>): Promise<void> {
+    public async trackError(errorName: string, errorMessage: string = "", properties?: Record<string, any>): Promise<void> {
         const eventProperties: Record<string, any> = {
             error_message: errorMessage || "",
         }

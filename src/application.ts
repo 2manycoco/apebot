@@ -8,6 +8,7 @@ import { Logger } from "./utils/logger";
 import AnalyticsService from "./analytics/analytics_service";
 import {sleep} from "fuels";
 import {startVerifiedAssetsWorker} from "./fuel/asset/verified_assets_provider";
+import {CryptoPriceFetcher} from "./fuel/price_fetcher";
 
 dotenv.config();
 
@@ -22,16 +23,14 @@ async function application() {
             console.log("Analytics connected successfully.");
         });
 
-        if (process.env.USE_LOCAL_STORAGE === "false") {
-            // Initialize database
-            await retryAll(async () => {
-                const dbInstance = await AppDataSource.initialize();
-                if (!dbInstance) {
-                    throw new Error("Failed to initialize database instance.");
-                }
-                console.log("Database connected successfully.");
-            });
-        }
+        // Initialize database
+        await retryAll(async () => {
+            const dbInstance = await AppDataSource.initialize();
+            if (!dbInstance) {
+                throw new Error("Failed to initialize database instance.");
+            }
+            console.log("Database connected successfully.");
+        });
 
         // Initialize RPC (Session Manager)
         await retryAll(async () => {
@@ -45,6 +44,10 @@ async function application() {
         // Cache Verified Assets
         await startVerifiedAssetsWorker()
         console.log("Verified assets fetch successfully.");
+
+        // Start price fetch
+        CryptoPriceFetcher.getInstance()
+        console.log("Price fetch successfully.");
 
         // Start Telegram bot
         console.log("Starting the Telegram bot");

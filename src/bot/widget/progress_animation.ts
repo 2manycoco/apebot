@@ -1,6 +1,6 @@
 import {Context} from "telegraf";
 import {Logger} from "../../utils/logger";
-import {retry, retryAll} from "../../utils/call_helper";
+import {retry} from "../../utils/call_helper";
 
 export class ProgressAnimation {
     private progressFrames = [
@@ -46,7 +46,7 @@ export class ProgressAnimation {
 
         try {
             if (this.messageId) {
-                await retryAll(
+                await retry(
                     async () => await this.ctx.deleteMessage(this.messageId), 5
                 );
             }

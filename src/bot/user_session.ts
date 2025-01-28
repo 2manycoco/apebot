@@ -1,5 +1,5 @@
 import {Context, Markup} from "telegraf";
-import {Actions, ActionValues, Commands, CommandValues, TemplateActionValues} from "./actions";
+import {Actions, ActionValues, Commands, CommandValues, TemplateActions, TemplateActionValues} from "./actions";
 import {DexClient} from "../dex/dex_client";
 import {WalletUnlocked} from "fuels";
 import {getUserRepository, UserRepository} from "../database/user_repository";
@@ -10,8 +10,8 @@ import {Flow} from "./flow/flow";
 import {UserManager} from "./user_manager";
 import {withProgress} from "./help_functions";
 import {IntroduceFlow} from "./flow/introduce_flow";
-import {CONTRACTS, TRADE_ASSET} from "../fuel/asset/contracts";
-import {replyBalance, replyMenu, replyWalletPK} from "./session_message_builder";
+import {TRADE_ASSET} from "../fuel/asset/contracts";
+import {replyMenu, replyWalletPK} from "./session_message_builder";
 import dotenv from "dotenv";
 import path from "node:path";
 import {FlowId, FlowValues} from "./flow/flow_ids";
@@ -21,6 +21,12 @@ import {SwapFlow} from "./flow/swap_flow";
 import {isValidFuelAddress} from "../fuel/functions";
 import {BuyFlow} from "./flow/buy_flow";
 import {SellFlow} from "./flow/sell_flow";
+import {BalanceFlow} from "./flow/balance_flow";
+import {generatePriceMessage} from "../fuel/price_fetcher";
+import {PositionsFlow} from "./flow/positions_flow";
+import {formatMessage, Strings} from "./resources/strings";
+import {AnalyticsEvents} from "../analytics/analytics_events";
+import {LOW_BALANCE_VALUE} from "../fuel/constants";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -49,21 +55,29 @@ export class UserSession {
     }
 
     async handleCommand(command: CommandValues) {
-        trackUserAnalytics(this.ctx, "user_command", {
+        trackUserAnalytics(this.ctx, AnalyticsEvents.UserCommand, {
             command_name: command
         })
         await this.handleUserTerms(async () => {
+            await this.cleanActiveFlow()
             switch (command) {
                 case Commands.START:
                     await this.onCommandStart()
                     break;
-                case Commands.ABOUT:
-                    await this.onCommandHelp();
+                case Commands.POSITIONS:
+                    await this.onCommandPositions();
                     break;
-                case Commands.DOCS:
-                    await this.onCommandDocs();
+                case Commands.BUY:
+                    await this.startBuy(null);
+                    break;
+                case Commands.SELL:
+                    await this.startSell(null);
+                    break;
+                case Commands.INFO:
+                    await this.onCommandInfo();
                     break;
                 default:
+                    this.analytics.trackError(AnalyticsEvents.ErrorUnknownCommand)
                     await this.ctx.reply("Unknown action. Please choose a valid option.");
             }
         });
@@ -73,18 +87,18 @@ export class UserSession {
         await this.showMenu()
     }
 
-    private async onCommandHelp() {
-
+    private async onCommandPositions() {
+        await this.showPositions()
     }
 
-    private async onCommandDocs() {
+    private async onCommandInfo() {
         await this.ctx.reply(
-            "Откройте документацию, нажав на кнопку ниже:",
-            {
-                ...Markup.inlineKeyboard([
-                    Markup.button.url("Открыть документацию", process.env.DOC_URL),
-                ]),
-            }
+            Strings.ABOUT_MESSAGE_TEXT,
+            Markup.inlineKeyboard([
+                [Markup.button.url(Strings.ABOUT_BUTTON_DOCS, process.env.DOC_URL)],
+                [Markup.button.url(Strings.ABOUT_BUTTON_COMMUNITY, process.env.TELEGRAM_URL_GENERAL)],
+                [Markup.button.url(Strings.ABOUT_BUTTON_REPORT, process.env.TELEGRAM_URL_REPORT)],
+            ])
         );
     }
 
@@ -93,7 +107,7 @@ export class UserSession {
      * @param action The action string received from the button callback.
      */
     async handleAction(action: ActionValues): Promise<void> {
-        trackUserAnalytics(this.ctx, "user_action", {
+        trackUserAnalytics(this.ctx, AnalyticsEvents.UserAction, {
             action_name: action
         })
 
@@ -101,6 +115,8 @@ export class UserSession {
             return this.activeFlow.handleAction(action)
         })
         if (isIntercepted) return
+
+        await this.cleanActiveFlow()
 
         if (await this.handleMenuAction(action)) {
             return
@@ -112,19 +128,35 @@ export class UserSession {
     }
 
     async handleTemplateAction(action: TemplateActionValues): Promise<void> {
-        trackUserAnalytics(this.ctx, "user_template_action", {
+        trackUserAnalytics(this.ctx, AnalyticsEvents.UserTemplateAction, {
             action_name: action
         })
 
         await this.interceptOnActiveFLow(async () => {
             return this.activeFlow.handleTemplateAction(action)
         })
+
+        if (await this.handleMenuTemplateAction(action)) {
+            return
+        }
+    }
+
+    private async handleMenuTemplateAction(action: TemplateActionValues): Promise<boolean> {
+        const {type, symbol, id, percentage} = action;
+
+        if (type == "SELL") {
+            await this.startSell(symbol, percentage)
+            return true;
+        }
     }
 
     private async handleMenuAction(action: ActionValues): Promise<boolean> {
         switch (action) {
             case Actions.MAIN_BALANCE:
                 await this.showBalance();
+                return true;
+            case Actions.MAIN_VIEW_POSITIONS:
+                await this.showPositions();
                 return true;
             case Actions.MAIN_WALLET_PK:
                 await this.showWalletPK();
@@ -151,7 +183,7 @@ export class UserSession {
      * @param message The message or input from the user.
      */
     async handleMessage(message: string): Promise<void> {
-        trackUserAnalytics(this.ctx, "user_message", {
+        trackUserAnalytics(this.ctx, AnalyticsEvents.UserMessage, {
             message: message
         })
         const isIntercepted = await this.interceptOnActiveFLow(async () => {
@@ -166,11 +198,15 @@ export class UserSession {
         await this.handleUserTerms(async () => {
             return await this.onCommandStart()
         });
+
+        trackUserAnalytics(this.ctx, AnalyticsEvents.UserMessageUnexpected, {
+            message: message
+        })
     }
 
     private async handleMenuMessage(message: string): Promise<boolean> {
         if (isValidFuelAddress(message)) {
-            if (message === CONTRACTS.ASSET_ETH.bits) {
+            if (message === TRADE_ASSET.bits) {
                 await this.showBalance();
                 return true;
             } else {
@@ -185,12 +221,19 @@ export class UserSession {
      * Start a new Flow, cleaning up the previous one if necessary.
      * @param flow The new Flow to start.
      */
-    async startFlow(flow: Flow): Promise<void> {
+    private async startFlow(flow: Flow): Promise<void> {
         if (this.activeFlow) {
             await this.activeFlow.cleanup();
         }
         this.activeFlow = flow;
         await flow.start();
+    }
+
+    private async cleanActiveFlow(): Promise<void> {
+        if (this.activeFlow) {
+            await this.activeFlow.cleanup();
+            this.activeFlow = null
+        }
     }
 
     /**
@@ -205,6 +248,10 @@ export class UserSession {
             case FlowId.SELL_FLOW:
                 await this.showBalance()
                 return true;
+            case FlowId.BALANCE_FLOW:
+            case FlowId.POSITIONS_FLOW:
+                return true;
+
         }
         await this.showMenu()
     }
@@ -214,41 +261,39 @@ export class UserSession {
     private async showMenu(): Promise<void> {
         const walletAddress = this.wallet.address.toString()
         let amount: number
+        let prices: string
         await withProgress(this.ctx, async () => {
             const [responseAmount] = await this.dexClient.getBalance(TRADE_ASSET.bits);
             amount = responseAmount
+
+            prices = generatePriceMessage()
         })
 
-        await replyMenu(this.ctx, walletAddress, amount, TRADE_ASSET.symbol)
+        const balanceWarning =
+            (amount > 0 && amount < LOW_BALANCE_VALUE)
+                ? formatMessage(Strings.WARNING_LOW_BALANCE, LOW_BALANCE_VALUE, TRADE_ASSET.symbol) : undefined
+
+        await replyMenu(this.ctx, walletAddress, amount, TRADE_ASSET.symbol, prices, balanceWarning)
     }
 
     private async showBalance(): Promise<void> {
-        let totalBalance = 0;
-        let balances: Array<[string, string, string]>
-        await withProgress(this.ctx, async () => {
-            balances = await this.dexClient.getBalances();
-            for (const [assetId, symbol, amount] of balances) {
-                const balanceAmount = parseFloat(amount);
-                if (symbol === TRADE_ASSET.symbol) {
-                    totalBalance += balanceAmount;
-                } else {
-                    try {
-                        const rate = await this.dexClient.getRate(assetId, TRADE_ASSET.bits);
-                        const equivalent = balanceAmount * rate;
-                        totalBalance += equivalent;
-                    } catch (error) {
-                        console.warn(`Failed to fetch rate for asset ${symbol}: ${error.message}`);
-                    }
-                }
-            }
-        })
-
-        await replyBalance(this.ctx, balances, totalBalance, TRADE_ASSET.symbol)
+        return await this.startFlow(new BalanceFlow(this.ctx, this.userId, this.dexClient, (flowId: FlowValues) => {
+            this.onFlowCompleted(flowId);
+        }));
     }
 
     private async showWalletPK(): Promise<void> {
         const walletPK = this.wallet.privateKey
-        await replyWalletPK(this.ctx, walletPK)
+
+        const message = await replyWalletPK(this.ctx, walletPK);
+
+        setTimeout(async () => {
+            try {
+                await this.ctx.telegram.deleteMessage(this.ctx.chat.id, message.message_id);
+            } catch (error) {
+                console.error("Failed to delete wallet PK message:", error.message);
+            }
+        }, 30000);
     }
 
     private async withdrawFunds(): Promise<void> {
@@ -269,8 +314,14 @@ export class UserSession {
         }));
     }
 
-    private async startBuy(assert: string | null): Promise<void> {
-        await this.startFlow(new BuyFlow(this.ctx, this.userId, this.dexClient, assert, (flowId: FlowValues) => {
+    private async showPositions(): Promise<void> {
+        await this.startFlow(new PositionsFlow(this.ctx, this.userId, this.dexClient, (flowId: FlowValues) => {
+            this.onFlowCompleted(flowId);
+        }));
+    }
+
+    private async startBuy(assetId: string | null): Promise<void> {
+        await this.startFlow(new BuyFlow(this.ctx, this.userId, this.dexClient, assetId, (flowId: FlowValues) => {
             this.onFlowCompleted(flowId);
         }));
     }

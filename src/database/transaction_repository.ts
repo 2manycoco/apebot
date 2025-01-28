@@ -1,19 +1,10 @@
 import {Transaction} from "./entities";
 import {Repository} from "typeorm";
 import {AppDataSource} from "./database";
-import dotenv from "dotenv";
 
-dotenv.config();
-
-export interface TransactionRepository {
-    addTransaction(transaction: Transaction): Promise<void>;
-
-    getUserTransactions(userId: number): Promise<Transaction[]>;
-}
-
-export class TransactionStorage implements TransactionRepository {
+export class TransactionStorage {
     private static instance: TransactionStorage;
-    private transactionRepository: Repository<Transaction>;
+    transactionRepository: Repository<Transaction>;
 
     private constructor() {
         this.transactionRepository = AppDataSource.getRepository(Transaction);
@@ -26,8 +17,8 @@ export class TransactionStorage implements TransactionRepository {
         return TransactionStorage.instance;
     }
 
-    async addTransaction(transaction: Transaction): Promise<void> {
-        await this.transactionRepository.save(transaction);
+    async addTransaction(transaction: Transaction): Promise<Transaction> {
+        return await this.transactionRepository.save(transaction);
     }
 
     async getUserTransactions(userId: number): Promise<Transaction[]> {
@@ -35,35 +26,7 @@ export class TransactionStorage implements TransactionRepository {
     }
 }
 
-export class TransactionMapStorage implements TransactionRepository {
-    private static instance: TransactionMapStorage;
-    private transactions: Map<string, Transaction>;
-
-    private constructor() {
-        this.transactions = new Map<string, Transaction>();
-    }
-
-    public static getInstance(): TransactionRepository {
-        if (!TransactionMapStorage.instance) {
-            TransactionMapStorage.instance = new TransactionMapStorage();
-        }
-        return TransactionMapStorage.instance;
-    }
-
-    async addTransaction(transaction: Transaction): Promise<void> {
-        this.transactions.set(transaction.transactionId, transaction);
-    }
-
-    async getUserTransactions(userId: number): Promise<Transaction[]> {
-        return Array.from(this.transactions.values()).filter(tx => tx.userId === userId);
-    }
-}
-
-export function getTransactionRepository(): TransactionRepository {
-    if (process.env.USE_LOCAL_STORAGE === "false") {
-        return TransactionStorage.getInstance()
-    } else {
-        return TransactionMapStorage.getInstance()
-    }
+export function getTransactionRepository(): TransactionStorage {
+    return TransactionStorage.getInstance()
 }
 

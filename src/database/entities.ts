@@ -1,6 +1,15 @@
-import {Entity, PrimaryColumn, Column, PrimaryGeneratedColumn, Index, CreateDateColumn} from "typeorm";
+import {
+    Entity,
+    PrimaryColumn,
+    Column,
+    PrimaryGeneratedColumn,
+    Index,
+    CreateDateColumn,
+    ManyToOne,
+    JoinColumn
+} from "typeorm";
 
-@Entity()
+@Entity("users")
 export class User  {
     @PrimaryColumn("bigint", { name: "telegram_id", nullable: false })
     telegramId: number = 0;
@@ -21,23 +30,40 @@ export class User  {
 @Entity("transactions")
 export class Transaction {
     @PrimaryGeneratedColumn("uuid", { name: "transaction_id" })
-    transactionId: string = "";
+    transactionId: string;
 
     @Column("bigint", { name: "user_id", nullable: false })
     @Index()
     userId: number = 0;
 
-    @Column("varchar", { length: 10, name: "symbol_from", nullable: false })
-    symbolFrom: string = "";
+    @Column("varchar", { length: 66, name: "asset_id_in", nullable: false })
+    assetIdIn: string = "";
 
-    @Column("decimal", { precision: 18, scale: 8, name: "amount_from", nullable: false })
-    amountFrom: number = 0;
+    @Column("decimal", { precision: 18, scale: 8, name: "amount_in", nullable: false })
+    amountIn: number = 0;
 
-    @Column("varchar", { length: 10, name: "symbol_to", nullable: false })
-    symbolTo: string = "";
+    @Column("varchar", { length: 66, name: "asset_id_out", nullable: false })
+    assetIdOut: string = ""; // Адрес монеты, которая получается в результате обмена
 
-    @Column("decimal", { precision: 18, scale: 8, name: "amount_to", nullable: false })
-    amountTo: number = 0;
+    @Column("decimal", { precision: 18, scale: 8, name: "amount_out", nullable: false })
+    amountOut: number = 0;
+
+    @Column("bigint", { name: "timestamp", nullable: false })
+    timestamp: number = 0;
+}
+
+@Entity("positions")
+export class Position {
+    @PrimaryGeneratedColumn("uuid", { name: "position_id" })
+    positionId: string;
+
+    @ManyToOne(() => Transaction)
+    @JoinColumn({ name: "transaction_id" })
+    transaction: Transaction;
+
+    @Column("bigint", { name: "user_id", nullable: false })
+    @Index()
+    userId: number;
 
     @Column("bigint", { name: "timestamp", nullable: false })
     timestamp: number = 0;

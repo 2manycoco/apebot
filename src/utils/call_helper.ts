@@ -30,8 +30,8 @@ export function setupGlobalHttpClient() {
 
 export async function retry<T>(
     fn: () => Promise<T>,
-    retries = 15,
-    delay = 200,
+    retries = 10,
+    delay = 300,
     onlyNetwork: boolean = true,
 ): Promise<T> {
     let attempt = 0;
@@ -59,8 +59,8 @@ export async function retry<T>(
 
 export async function retryAll<T>(
     fn: () => Promise<T>,
-    retries = 15,
-    delay = 200
+    retries = 10,
+    delay = 300
 ): Promise<T> {
     return retry(fn, retries, delay, false);
 }

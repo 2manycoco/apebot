@@ -8,8 +8,16 @@ import path from "node:path";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
-// Create an instance of Telegraf with your app_telegram_bot token
-const app_telegram_bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+const telegramBotToken = process.env.IS_DEVELOP == "true"
+    ? process.env.TELEGRAM_BOT_TEST_TOKEN
+    : process.env.TELEGRAM_BOT_TOKEN;
+
+if (!telegramBotToken) {
+    throw new Error("Telegram bot token is not set. Check your environment variables.");
+}
+
+// Create an instance of Telegraf with the selected token
+const app_telegram_bot = new Telegraf(telegramBotToken);
 
 // Handle commands
 app_telegram_bot.command(Object.values(Commands), async (ctx) => {
@@ -26,20 +34,6 @@ app_telegram_bot.command(Object.values(Commands), async (ctx) => {
         }
     });
 });
-
-/*// Handle button clicks
-app_telegram_bot.action(Object.values(Actions), async (ctx) => {
-    await handleUserInteraction(ctx, async (session) => {
-        const action = ctx.match?.[0] as ActionValues;
-        if (!action) {
-            await ctx.reply("Unable to process action. Please try again.");
-            return;
-        }
-
-        // Set action for the session
-        await session.handleAction(action);
-    });
-});*/
 
 // Handle button clicks
 app_telegram_bot.action(/.*/, async (ctx) => {

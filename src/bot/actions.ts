@@ -1,9 +1,10 @@
 // This file contains all possible user actions for the Telegram bot
-
 export const Commands = {
-    START: "start", // Command to start the bot
-    ABOUT: "about", // Command to show help information
-    DOCS: "docs", // Command to show help information
+    START: "start", //Open the main menu
+    POSITIONS: "positions", //View active trading positions and PnL
+    BUY: "buy", //Buy tokens
+    SELL: "sell", //Sell your tokens
+    INFO: "info", //Open documentation and details
 } as const;
 
 export type CommandKeys = keyof typeof Commands;
@@ -12,13 +13,16 @@ export type CommandValues = typeof Commands[CommandKeys];
 export const Actions = {
     CANCEL: "CANCEL",
     ACCEPT: "ACCEPT",
+    CONFIRM: "CONFIRM",
     CONTINUE: "CONTINUE",
+    LOADING: "LOADING",
     PERCENT_25: "25%",
     PERCENT_50: "50%",
     PERCENT_100: "100%",
     AMOUNT_0_002: "AMOUNT_0_002",
     AMOUNT_0_005: "AMOUNT_0_005",
     AMOUNT_0_01: "AMOUNT_0_01",
+    SHOW_MORE: "SHOW_MORE",
 
     MAIN_BALANCE: "MAIN_BALANCE",
     MAIN_WITHDRAW_FUNDS: "MAIN_WITHDRAW_FUNDS",
@@ -37,16 +41,24 @@ export type ActionKeys = keyof typeof Actions;
 export type ActionValues = typeof Actions[ActionKeys];
 
 export const TemplateActions = {
-    BUY: (symbol: string, percentage?: number) => `BUY:${symbol}${percentage !== undefined ? `:${percentage}` : ""}`,
+    BUY: (symbol: string) => `BUY:${symbol}`,
     SELL: (symbol: string, percentage?: number) => `SELL:${symbol}${percentage !== undefined ? `:${percentage}` : ""}`,
+    REFRESH: (id: number) => `REFRESH:${id}`,
+    HIDE: (id: number) => `HIDE:${id}`,
+
     parse: (action: string): TemplateActionValues | null => {
-        const pattern = /^(BUY|SELL):([^:]+)(?::(\d+))?$/; // Добавлена проверка на необязательный процент
+        const pattern = /^(BUY|SELL|REFRESH|HIDE):([^:]+)(?::(\d+))?$/;
         const match = action.match(pattern);
         if (match) {
-            const [_, type, symbol, percentage] = match;
+            const [_, type, symbolOrId, percentage] = match;
+
+            if (type === "REFRESH" || type === "HIDE") {
+                return {type: type as TemplateActionKeys, id: parseInt(symbolOrId)};
+            }
+
             return {
                 type: type as TemplateActionKeys,
-                symbol,
+                symbol: symbolOrId,
                 percentage: percentage ? parseInt(percentage, 10) : undefined,
             };
         }
@@ -54,9 +66,10 @@ export const TemplateActions = {
     },
 } as const;
 
-export type TemplateActionKeys = "BUY" | "SELL";
+export type TemplateActionKeys = "BUY" | "SELL" | "REFRESH" | "HIDE";
 export type TemplateActionValues = {
-    type: "BUY" | "SELL";
-    symbol: string;
+    type: TemplateActionKeys;
+    symbol?: string;
+    id?: number;
     percentage?: number;
 };

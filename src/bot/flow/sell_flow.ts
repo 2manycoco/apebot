@@ -1,23 +1,27 @@
-import { Flow } from "./flow";
-import { Context, Markup } from "telegraf";
-import { Actions, ActionValues, TemplateActions, TemplateActionValues } from "../actions";
-import { FlowId, FlowValues } from "./flow_ids";
-import { formatMessage, Strings } from "../resources/strings";
-import { formatTokenNumber, withProgress } from "../help_functions";
-import { DexClient } from "../../dex/dex_client";
-import { CONTRACTS, TRADE_ASSET } from "../../fuel/asset/contracts";
-import { replyConfirmMessage } from "../session_message_builder";
+import {Flow} from "./flow";
+import {Context, Markup} from "telegraf";
+import {Actions, ActionValues, TemplateActions, TemplateActionValues} from "../actions";
+import {FlowId, FlowValues} from "./flow_ids";
+import {formatMessage, Strings} from "../resources/strings";
+import {formatTokenNumber, withProgress} from "../help_functions";
+import {DexClient} from "../../dex/dex_client";
+import {CONTRACTS} from "../../fuel/asset/contracts";
+import {replyConfirmMessage} from "../session_message_builder";
+import {getTransactionRepository} from "../../database/transaction_repository";
+import {Transaction} from "../../database/entities";
+import {getPositionRepository} from "../../database/position_repository";
 
 export class SellFlow extends Flow {
     private step: "SELECT_ASSET" | "INPUT_PERCENTAGE" | "CONFIRMATION" | "COMPLETED" = "SELECT_ASSET";
     private userDexClient: DexClient;
 
+    private tradeAsset = CONTRACTS.ASSET_ETH;
+
     private assetsList: Array<{ assetId: string; symbol: string; balance: number; priceInUsdc: string }> = [];
     private asset: { assetId: string; symbol: string; balance: number; priceInUsdc: string } = null;
-    private amountToSell: number;
     private percentageToSell: number | null = null;
-
-    private tradeAsset = CONTRACTS.ASSET_ETH;
+    private amountToSell: number;
+    private expectedOutAmount: number;
 
     constructor(
         ctx: Context,
@@ -55,7 +59,7 @@ export class SellFlow extends Flow {
             .find((asset) => asset.symbol === this.symbol);
 
         if (!selectedAsset) {
-            await this.ctx.reply(Strings.SELL_NO_ASSETS_TEXT, { parse_mode: "Markdown" });
+            await this.ctx.reply(Strings.SELL_NO_ASSETS_TEXT, {parse_mode: "Markdown"});
             this.step = "COMPLETED";
             return;
         }
@@ -67,7 +71,7 @@ export class SellFlow extends Flow {
 
         if (this.percentage !== null) {
             if (this.percentage <= 0 || this.percentage > 100) {
-                await this.ctx.reply(Strings.SELL_PERCENTAGE_ERROR, { parse_mode: "Markdown" });
+                await this.ctx.reply(Strings.SELL_PERCENTAGE_ERROR, {parse_mode: "Markdown"});
                 this.step = "COMPLETED";
                 return;
             }
@@ -84,7 +88,7 @@ export class SellFlow extends Flow {
             const nonEthBalances = balances.filter(([assetId]) => assetId !== this.tradeAsset.bits);
 
             if (nonEthBalances.length === 0) {
-                await this.ctx.reply(Strings.SELL_NO_ASSETS_TEXT, { parse_mode: "Markdown" });
+                await this.ctx.reply(Strings.SELL_NO_ASSETS_TEXT, {parse_mode: "Markdown"});
                 this.step = "COMPLETED";
                 return Promise.resolve(false);
             }
@@ -94,12 +98,13 @@ export class SellFlow extends Flow {
                     const balance = parseFloat(amount);
                     let priceInUsdc: string | null = null;
                     try {
+                        let usdcRate = 0
                         if (CONTRACTS.ASSET_USDC.bits != assetId) {
-                            const usdcRate = await this.userDexClient.getRate(assetId, CONTRACTS.ASSET_USDC.bits);
-                            priceInUsdc = formatTokenNumber(balance * usdcRate);
+                            usdcRate = await this.userDexClient.getRate(assetId, CONTRACTS.ASSET_USDC.bits);
                         } else {
-                            priceInUsdc = "1"
+                            usdcRate = 1
                         }
+                        priceInUsdc = formatTokenNumber(balance * usdcRate);
                     } catch (e) {
                         priceInUsdc = "?";
                     }
@@ -132,7 +137,7 @@ export class SellFlow extends Flow {
                 }, [] as Array<Array<ReturnType<typeof Markup.button.callback>>>)
             );
 
-            await this.ctx.reply(formatMessage(Strings.SELL_START_TEXT_ASSET, balancesText), { parse_mode: "Markdown", ...keyboard });
+            await this.ctx.reply(formatMessage(Strings.SELL_START_TEXT_ASSET, balancesText), {parse_mode: "Markdown", ...keyboard});
 
             return Promise.resolve(true);
         });
@@ -182,11 +187,12 @@ export class SellFlow extends Flow {
                 return true;
             }
 
-            if (action === Actions.ACCEPT) {
+            if (action === Actions.CONFIRM) {
                 await withProgress(this.ctx, async () => {
                     const slippage = await this.userManager.getSlippage();
                     await this.userDexClient.swap(this.asset.assetId, CONTRACTS.ASSET_ETH.bits, this.amountToSell!, slippage);
-                    await this.ctx.reply(Strings.SELL_SUCCESS, { parse_mode: "Markdown" });
+                    await this.confirmSell()
+                    await this.ctx.reply(Strings.SELL_SUCCESS, {parse_mode: "Markdown"});
                     this.step = "COMPLETED";
                 });
                 return true;
@@ -241,7 +247,7 @@ export class SellFlow extends Flow {
         if (this.step === "INPUT_PERCENTAGE") {
             const percentage = parseFloat(message);
             if (isNaN(percentage) || percentage < 1 || percentage > 100) {
-                await this.ctx.reply(Strings.SELL_PERCENTAGE_ERROR, { parse_mode: "Markdown" });
+                await this.ctx.reply(Strings.SELL_PERCENTAGE_ERROR, {parse_mode: "Markdown"});
                 return false;
             }
 
@@ -256,14 +262,14 @@ export class SellFlow extends Flow {
     private async calculateAndConfirmSell(): Promise<void> {
         const confirmationMessage = await withProgress(this.ctx, async () => {
             this.amountToSell = (this.asset.balance * this.percentageToSell!) / 100;
-            const expectedEthAmount = await this.userDexClient.calculateSwapAmount(this.asset.assetId, TRADE_ASSET.bits, this.amountToSell);
+            this.expectedOutAmount = await this.userDexClient.calculateSwapAmount(this.asset.assetId, this.tradeAsset.bits, this.amountToSell);
 
             return formatMessage(
                 Strings.SELL_CONFIRMATION_TEXT,
                 formatTokenNumber(this.amountToSell),
                 this.asset.symbol,
-                formatTokenNumber(expectedEthAmount),
-                TRADE_ASSET.symbol
+                formatTokenNumber(this.expectedOutAmount),
+                this.tradeAsset.symbol
             );
         });
 
@@ -273,7 +279,31 @@ export class SellFlow extends Flow {
         });
     }
 
+    private async confirmSell() {
+        const repository = getTransactionRepository()
+        const transaction = new Transaction()
+        transaction.userId = this.userId;
+        transaction.assetIdIn = this.asset.assetId;
+        transaction.amountIn = this.amountToSell;
+        transaction.assetIdOut = this.tradeAsset.bits;
+        transaction.amountOut = this.expectedOutAmount;
+        transaction.timestamp = Date.now();
+
+        await repository.addTransaction(transaction)
+        await this.updatePosition()
+    }
+
+    private async updatePosition() {
+        const repository = getPositionRepository()
+        if (this.percentageToSell == 100) {
+            const position = await repository.findPositionByPair(this.userId, this.tradeAsset.bits, this.asset.assetId)
+            if (position != null) {
+                await repository.deletePosition(position.positionId)
+            }
+        }
+    }
+
     isFinished(): boolean {
-        return this.step === "COMPLETED";
+        return false;
     }
 }

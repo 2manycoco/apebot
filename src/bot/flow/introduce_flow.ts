@@ -25,7 +25,7 @@ export class IntroduceFlow extends Flow {
                     caption: Strings.INTRODUCE_TEXT,
                     parse_mode: "Markdown",
                     ...Markup.inlineKeyboard([
-                        Markup.button.callback(Strings.BUTTON_CONTINUE, Actions.CONTINUE),
+                        Markup.button.callback(Strings.BUTTON_ACCEPT, Actions.ACCEPT),
                     ]),
                 }
             )
@@ -34,7 +34,7 @@ export class IntroduceFlow extends Flow {
 
     public async handleActionInternal(action: ActionValues): Promise<boolean> {
         switch (action) {
-            case Actions.CONTINUE:
+            case Actions.ACCEPT:
                 await this.userManager.acceptTerms();
                 this.isUserAccept = true
                 return Promise.resolve(true);

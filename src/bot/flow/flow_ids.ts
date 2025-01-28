@@ -5,6 +5,8 @@ export const FlowId = {
     SWAP_FLOW: "SWAP_FLOW",
     BUY_FLOW: "BUY_FLOW",
     SELL_FLOW: "SELL_FLOW",
+    POSITIONS_FLOW: "POSITIONS_FLOW",
+    BALANCE_FLOW: "BALANCE_FLOW"
 } as const;
 
 export type FlowKeys = keyof typeof FlowId;

@@ -8,8 +8,11 @@ import {createProvider} from "../fuel/functions";
 import {trackUserAnalytics} from "./user_analytics";
 import {Mutex} from "../utils/mutex";
 import {EncryptionManager} from "../utils/encryption_manager";
+import path from "node:path";
 
 dotenv.config();
+dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
+
 
 // Type definition for sessions
 type SessionMap = Map<number, { session: UserSession; lastActivity: Date }>;
@@ -64,7 +67,7 @@ export class SessionManager {
                 user = await this.userRepository.getUserById(userId);
                 if (!user) {
                     try {
-                        wallet = WalletUnlocked.generate();
+                        wallet = this.generateWallet()
                         const walletAddress = wallet.address.toString();
                         const walletPK = EncryptionManager.encrypt(wallet.privateKey);
                         wallet.provider = this.provider;
@@ -76,7 +79,7 @@ export class SessionManager {
                             slippage: 0.5,
                         };
                         await this.userRepository.saveUser(user);
-                        await trackUserAnalytics(ctx, "user_created");
+                        trackUserAnalytics(ctx, "user_created");
                     } catch (error) {
                         throw new Error(`Failed to create a wallet for user ${userId}: ${error.message}`);
                     }
@@ -112,5 +115,13 @@ export class SessionManager {
                 }
             }
         }, 60 * 60 * 1000); // Run every 1 hour
+    }
+
+    private generateWallet() : WalletUnlocked{
+        if(process.env.IS_DEVELOP == "true"){
+            return new WalletUnlocked(process.env.TEST_WALLET_PK, this.provider);
+        } else {
+            return WalletUnlocked.generate();
+        }
     }
 }

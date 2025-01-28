@@ -7,29 +7,34 @@ import {formatTokenNumber, withProgress} from "../help_functions";
 import {DexClient} from "../../dex/dex_client";
 import {TokenInfo} from "../../dex/model";
 import {CONTRACTS} from "../../fuel/asset/contracts";
-import {BN} from "fuels";
 import {replyConfirmMessage} from "../session_message_builder";
+import {getTransactionRepository} from "../../database/transaction_repository";
+import {Position, Transaction} from "../../database/entities";
+import {getPositionRepository} from "../../database/position_repository";
+import {LOW_BALANCE_FOR_SWAP_VALUE} from "../../fuel/constants";
 
 export class BuyFlow extends Flow {
     private step: "INPUT_ASSET" | "INPUT_AMOUNT" | "CONFIRMATION" | "COMPLETED" = "INPUT_ASSET";
     private userDexClient: DexClient;
-    private asset: string | null;
+    private assetId: string | null;
 
-    private ethBalance: number;
+    private tradeAsset = CONTRACTS.ASSET_ETH;
+    private tradeBalance: number;
+
     private amountToSpend: number | null = null;
-    private expectedTokenAmount: BN | null = null;
+    private expectedOutAmount: number | null = null;
     private tokenInfo: TokenInfo;
 
     constructor(
         ctx: Context,
         userId: number,
         userDexClient: DexClient,
-        asset: string | null = null,
+        assetId: string | null = null,
         onCompleteCallback?: (flowId: string) => void
     ) {
         super(ctx, userId, onCompleteCallback);
         this.userDexClient = userDexClient;
-        this.asset = asset;
+        this.assetId = assetId;
     }
 
     getFlowId(): FlowValues {
@@ -37,7 +42,7 @@ export class BuyFlow extends Flow {
     }
 
     public async start(): Promise<void> {
-        if (!this.asset) {
+        if (!this.assetId) {
             await this.ctx.reply(Strings.BUY_ENTER_ASSET, {parse_mode: "Markdown"});
             return;
         }
@@ -47,9 +52,9 @@ export class BuyFlow extends Flow {
 
     private async processAsset(): Promise<void> {
         const result = await withProgress(this.ctx, async () => {
-            this.tokenInfo = await this.userDexClient.getTokenInfo(this.asset!);
+            this.tokenInfo = await this.userDexClient.getTokenInfo(this.assetId!);
             const [ethBalance] = await this.userDexClient.getBalance(CONTRACTS.ASSET_ETH.bits);
-            this.ethBalance = ethBalance;
+            this.tradeBalance = ethBalance;
 
             if (ethBalance === 0) {
                 await this.ctx.reply(Strings.BUY_INSUFFICIENT_FUNDS_TEXT, {parse_mode: "Markdown"});
@@ -64,10 +69,10 @@ export class BuyFlow extends Flow {
 
         const message = await withProgress(this.ctx, async () => {
             let priceUSDC: string
-            if (this.asset! != CONTRACTS.ASSET_USDC.bits) {
+            if (this.assetId! != CONTRACTS.ASSET_USDC.bits) {
                 const expectedTokenAmountUSDC = await this.userDexClient.calculateSwapAmount(
                     CONTRACTS.ASSET_USDC.bits,
-                    this.asset!,
+                    this.assetId!,
                     100
                 );
                 priceUSDC = formatTokenNumber(100 / expectedTokenAmountUSDC)
@@ -79,7 +84,7 @@ export class BuyFlow extends Flow {
                 Strings.BUY_START_TEXT,
                 this.tokenInfo.symbol,
                 priceUSDC,
-                this.ethBalance
+                this.tradeBalance
             );
         });
 
@@ -105,14 +110,14 @@ export class BuyFlow extends Flow {
                 return false;
             }
 
-            this.asset = message.trim();
+            this.assetId = message.trim();
             await this.processAsset();
             return true;
         }
 
         if (this.step === "INPUT_AMOUNT") {
             const enteredValue = parseFloat(message);
-            if (isNaN(enteredValue) || enteredValue <= 0 || enteredValue > this.ethBalance) {
+            if (isNaN(enteredValue) || enteredValue <= 0 || enteredValue > this.tradeBalance) {
                 await this.ctx.reply(Strings.BUY_AMOUNT_ERROR, {parse_mode: "Markdown"});
                 return false;
             }
@@ -135,9 +140,9 @@ export class BuyFlow extends Flow {
 
             if (amountMap[action] !== undefined) {
                 this.amountToSpend = amountMap[action];
-                if (this.amountToSpend > this.ethBalance) {
+                if (this.amountToSpend > this.tradeBalance) {
                     await this.ctx.reply(Strings.BUY_AMOUNT_ERROR, {parse_mode: "Markdown"});
-                    return false;
+                    return true;
                 }
                 await this.calculateAndConfirmPurchase();
                 return true;
@@ -150,10 +155,11 @@ export class BuyFlow extends Flow {
                 return true;
             }
 
-            if (action === Actions.ACCEPT) {
+            if (action === Actions.CONFIRM) {
                 await withProgress(this.ctx, async () => {
                     const slippage = await this.userManager.getSlippage()
-                    await this.userDexClient.swap(CONTRACTS.ASSET_ETH.bits, this.asset!, this.amountToSpend!, slippage);
+                    await this.userDexClient.swap(this.tradeAsset.bits, this.assetId!, this.amountToSpend!, slippage);
+                    await this.confirmBuy();
                     await this.ctx.reply(Strings.BUY_SUCCESS, {parse_mode: "Markdown"});
                     this.step = "COMPLETED";
                 });
@@ -166,17 +172,24 @@ export class BuyFlow extends Flow {
 
     private async calculateAndConfirmPurchase(): Promise<void> {
         const confirmationMessage = await withProgress(this.ctx, async () => {
-            const expectedTokenAmount = await this.userDexClient.calculateSwapAmount(
-                CONTRACTS.ASSET_ETH.bits,
-                this.asset!,
+            this.expectedOutAmount = await this.userDexClient.calculateSwapAmount(
+                this.tradeAsset.bits,
+                this.assetId!,
                 this.amountToSpend
             );
+
+            const balanceWarning =
+                (LOW_BALANCE_FOR_SWAP_VALUE > this.tradeBalance - this.amountToSpend) ?
+                    formatMessage(Strings.WARNING_LOW_BALANCE_AFTER_BUY, LOW_BALANCE_FOR_SWAP_VALUE, this.tradeAsset.symbol) : undefined;
+
+            const balanceWarningText = balanceWarning ? `\n${balanceWarning}\n` : ""
 
             return formatMessage(
                 Strings.BUY_CONFIRMATION_TEXT,
                 this.amountToSpend,
-                expectedTokenAmount.toString(),
-                this.tokenInfo.symbol
+                formatTokenNumber(this.expectedOutAmount),
+                this.tokenInfo.symbol,
+                balanceWarningText
             );
         });
 
@@ -184,6 +197,33 @@ export class BuyFlow extends Flow {
         await this.handleMessageResponse(async () => {
             return await replyConfirmMessage(this.ctx, confirmationMessage);
         });
+    }
+
+    private async confirmBuy() {
+        const repository = getTransactionRepository()
+        const transaction = new Transaction()
+        transaction.userId = this.userId;
+        transaction.assetIdIn = this.tradeAsset.bits;
+        transaction.amountIn = this.amountToSpend;
+        transaction.assetIdOut = this.tokenInfo.assetId;
+        transaction.amountOut = this.expectedOutAmount;
+        transaction.timestamp = Date.now();
+
+        await repository.addTransaction(transaction)
+        await this.updatePosition(transaction)
+    }
+
+    private async updatePosition(transaction: Transaction) {
+        const repository = getPositionRepository()
+        const position = await repository.findPositionByPair(this.userId, this.tradeAsset.bits, this.tokenInfo.assetId)
+        if (position == null) {
+            const position = new Position();
+            position.transaction = transaction;
+            position.userId = this.userId;
+            position.timestamp = Date.now();
+
+            await repository.addPosition(position)
+        }
     }
 
     isFinished(): boolean {

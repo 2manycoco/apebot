@@ -1,6 +1,5 @@
 import {Context} from "telegraf";
 import {ProgressAnimation} from "./widget/progress_animation";
-import {Address} from "fuels";
 
 export async function handleUserError(ctx: Context, error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
@@ -33,36 +32,50 @@ export async function withProgress<T>(
 
 
 export function formatTokenNumber(num: number): string {
-    if (num <= 0) {
-        throw new Error("The number should be positive.");
+    let isConverted: boolean = false
+    if (num < 0) {
+        num = num * -1
+        isConverted = true
     }
 
+    let result : string = ''
     if (num > 1000) {
-        return Math.floor(num).toString(); // Без десятичных
+        result = Math.floor(num).toString();
     } else if (num > 100) {
-        // Оставляем одну десятичную часть
         const parts = num.toString().split(".");
-        return parts[0] + (parts[1] ? "." + parts[1].slice(0, 1) : "");
+        result = parts[0] + (parts[1] ? "." + parts[1].slice(0, 1) : "");
     } else if (num > 10) {
-        // Оставляем три десятичные части
         const parts = num.toString().split(".");
-        return parts[0] + (parts[1] ? "." + parts[1].slice(0, 3) : "");
+        result = parts[0] + (parts[1] ? "." + parts[1].slice(0, 3) : "");
     } else if (num > 1) {
-        // Оставляем четыре десятичные части
         const parts = num.toString().split(".");
-        return parts[0] + (parts[1] ? "." + parts[1].slice(0, 4) : "");
+        result = parts[0] + (parts[1] ? "." + parts[1].slice(0, 4) : "");
     } else {
-        // Если меньше 1, ищем первое ненулевое число после точки
         const parts = num.toString().split(".");
         const fractional = parts[1] || ""; // Десятичная часть
         let significantIndex = fractional.search(/[1-9]/);
 
         if (significantIndex === -1) {
-            return "0"; // Если число состоит только из нулей
+            return "0";
         }
 
-        // Показываем первое ненулевое число и еще 2 цифры
         const truncated = fractional.slice(0, significantIndex + 3);
-        return `0.${truncated}`;
+        result = `0.${truncated}`;
+    }
+
+    if (isConverted) {
+        return "-" + result;
+    } else {
+        return result;
+    }
+}
+
+export function formatPercentage(value: number): string {
+    if (Math.abs(value) >= 10) {
+        return `${Math.round(value)}`;
+    } else if (Math.abs(value) >= 1) {
+        return `${value.toFixed(1)}`;
+    } else {
+        return `${value.toFixed(3)}`;
     }
 }

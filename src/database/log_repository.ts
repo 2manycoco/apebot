@@ -32,32 +32,6 @@ export class LogStorage implements LogRepository{
     }
 }
 
-export class InMemoryLogStorage implements LogRepository {
-    private static instance: InMemoryLogStorage;
-    private logs: Map<string, Log> = new Map();
-
-    private constructor() {}
-
-    public static getInstance(): InMemoryLogStorage {
-        if (!InMemoryLogStorage.instance) {
-            InMemoryLogStorage.instance = new InMemoryLogStorage();
-        }
-        return InMemoryLogStorage.instance;
-    }
-
-    async saveLog(log: Log): Promise<void> {
-        this.logs.set(log.logId, log); // Assuming `logId` is a unique identifier
-    }
-
-    async getAllLogs(): Promise<Log[]> {
-        return Array.from(this.logs.values());
-    }
-}
-
 export function getLogRepository(): LogRepository {
-    if (process.env.USE_LOCAL_STORAGE === "false") {
-        return LogStorage.getInstance()
-    } else {
-        return InMemoryLogStorage.getInstance()
-    }
+    return LogStorage.getInstance()
 }

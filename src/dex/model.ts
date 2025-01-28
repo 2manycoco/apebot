@@ -1,6 +1,6 @@
 export interface TokenInfo {
     assetId: string
-    name: String;
-    symbol: String;
+    name: string;
+    symbol: string;
     decimals: number;
 }

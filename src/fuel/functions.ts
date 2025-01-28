@@ -13,6 +13,8 @@ import {ProviderOptions} from "@fuel-ts/account/dist/providers/provider";
 import {NETWORK_CALL_TIMEOUT, retry} from "../utils/call_helper";
 import type {AbstractAddress, AddressLike, BytesLike} from "@fuel-ts/interfaces";
 import path from "node:path";
+import {TransferParams} from "@fuel-ts/account/dist/account";
+import type {BigNumberish} from "@fuel-ts/math";
 
 
 dotenv.config();
@@ -20,6 +22,7 @@ dotenv.config();
 const RPC_URL = process.env.RPC_URL!;
 const FEE_PERCENTAGE = parseFloat(process.env.FEE_PERCENTAGE)
 const FEE_RECIPIENT = Address.fromAddressOrString(process.env.FEE_RECIPIENT)
+const scalingFactor = new BN(10000);
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -28,7 +31,7 @@ export async function createProvider(): Promise<Provider> {
         timeout: NETWORK_CALL_TIMEOUT,
         resourceCacheTTL: 60000,
         retryOptions: {
-            maxRetries: 5,
+            maxRetries: 7,
             baseDelay: 300
         }
     };
@@ -102,7 +105,7 @@ export async function setupMaxGas(txRequest: TransactionRequest, wallet: WalletU
     const minGas = txRequest.calculateMinGas(chainInfo);
     const maxGas = txRequest.calculateMaxGas(chainInfo, minGas);
 
-    txRequest.maxFee = maxGas.mul(1.15);
+    txRequest.maxFee = maxGas.mul(new BN(105)).div(new BN(100));
 
     return await wallet.getTransactionCost(txRequest);
 }
@@ -126,36 +129,32 @@ export function applySlippageBN(amount: BN, slippage: number): BN {
     return amount.mul(slippageMultiplier).div(scalingFactor); // amount * (1 - slippage) / 10000
 }
 
+export function getServiceFee(): BN {
+    return new BN(FEE_PERCENTAGE);
+}
+
 /**
  * Calculate the fee amount based on the given percentage.
  * @param amountOut - The total amount of the transaction (BN).
  * @returns The calculated fee as a BN.
  */
-export function calculateFeeAmount(amountOut: BN): BN {
-    const feeMultiplier = new BN(Math.floor(FEE_PERCENTAGE * 10000));
-    return amountOut.mul(feeMultiplier).div(new BN(10000));
+export function calculateAmountAfterFee(amountOut: BN): BN {
+    const feeAmount = amountOut.mul(FEE_PERCENTAGE).div(scalingFactor);
+    return amountOut.sub(feeAmount);
 }
 
-/**
- * Add a fee output to a transaction request.
- * @param wallet - User wallet
- * @param txRequest - The transaction request object to modify.
- * @param feeAmount - The calculated fee amount (BN).
- * @param assetId - The asset ID for the fee (BytesLike).
- */
-export async function addFeeToTransaction(
+export function addFeeToTransaction(
     wallet: WalletUnlocked,
-    txRequest: TransactionRequest,
-    feeAmount: BN,
-    assetId: string
-): Promise<void> {
-    const quantities: CoinQuantity[] = [
-        {
-            amount: feeAmount,
-            assetId: assetId,
-        }
-    ];
-    const resources = await wallet.getResourcesToSpend(quantities);
-    txRequest.addResources(resources);
-    txRequest.addCoinOutput(FEE_RECIPIENT, feeAmount, assetId);
+    txRequest: ScriptTransactionRequest,
+    assetAmount: BN,
+    assetId: BytesLike
+) {
+    const feeAmount = assetAmount.div(scalingFactor);
+    const transferParams: TransferParams = {
+        destination: FEE_RECIPIENT.toString(),
+        amount: feeAmount,
+        assetId: assetId
+    }
+
+    wallet.addTransfer(txRequest, transferParams)
 }

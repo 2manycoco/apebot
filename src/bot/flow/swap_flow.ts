@@ -129,7 +129,7 @@ export class SwapFlow extends Flow {
                 return true;
             }
 
-            if (action === Actions.ACCEPT) {
+            if (action === Actions.CONFIRM) {
                 await withProgress(this.ctx, async () => {
                     const slippage = await this.userManager.getSlippage()
                     await this.userDexClient.swap(this.assetIn, this.assetOut, this.swapAmount!, slippage);

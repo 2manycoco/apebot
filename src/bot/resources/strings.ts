@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "node:path";
+import {Markup} from "telegraf";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -10,7 +11,7 @@ export const Strings = {
 
 By pressing the *Continue* button, your internal wallet will be generated. This wallet is secure as long as you store your secret phrase in a safe place—never share it with anyone.
 
-By using this bot, you agree to our [Terms and Conditions](https://tricky-coconut.gitbook.io/ape-bot-on-fuel/terms-and-conditions) and the Terms of Use for [Telegram Mini Apps](https://telegram.org/tos/mini-apps).  
+By using this bot, you agree to our [Terms and Conditions](${process.env.TERMS_URL}) and the Terms of Use for [Telegram Mini Apps](https://telegram.org/tos/mini-apps).  
 For more details, feel free to explore our [📖 ApeBot Documentation](${process.env.DOC_URL}).
 
 If you have any questions, reach out to us:
@@ -20,6 +21,8 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
 
     MENU_TEXT: `
 *Wallet:* \`%s\`
+
+%s
 
 *Balance:* \`%s %s\``,
     MENU_BUTTON_POSITIONS: "📈 Positions",
@@ -35,13 +38,22 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
     
 *Total:* \`%s %s \`
 `,
-    WALLET_PK_TEXT: `
-*Wallet PK:* \`%s\``,
+    WALLET_PK_TEXT: `*Wallet PK:*
+_\\(This message will auto\\-delete in 30 seconds\\)_
+     
+||%s||`,
 
     INVALID_ADDRESS_TEXT: "Invalid address",
     BUTTON_CANCEL: "Cancel",
     BUTTON_ACCEPT: "Accept",
+    BUTTON_CONFIRM: "Confirm",
     BUTTON_CONTINUE: "Continue",
+
+    BUTTON_MORE: "Next",
+    BUTTON_REFRESH: "Refresh",
+    BUTTON_HIDE: "Hide",
+    BUTTON_CUSTOM: "Custom",
+    BUTTON_LOADING: "...",
 
     PERCENT_0_1: "0.1%",
     PERCENT_0_5: "0.5%",
@@ -53,6 +65,11 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
     AMOUNT_0_002: "0.002 ETH",
     AMOUNT_0_005: "0.005 ETH",
     AMOUNT_0_01: "0.01 ETH",
+
+    ABOUT_MESSAGE_TEXT: "📚 Here are some helpful links:",
+    ABOUT_BUTTON_DOCS: "📖 Docs & Guides",
+    ABOUT_BUTTON_COMMUNITY: "💬 Support & Community",
+    ABOUT_BUTTON_REPORT: "✍️ Report a Bug // Request a Feature",
 
     WITHDRAW_INPUT_TEXT: `
 Balance: %s %s
@@ -84,8 +101,8 @@ Token: *%s* (%s USDC)
 Available: *%s ETH*
 
 Enter the amount to spend or choose from the options below:`,
-    BUY_AMOUNT_ERROR: "Invalid amount. Please enter a valid amount of ETH less than or equal to your balance.",
-    BUY_CONFIRMATION_TEXT: "*%s ETH* -> *%s %s*.\n\nDo you want to proceed?",
+    BUY_AMOUNT_ERROR: "Invalid amount. Please enter a valid amount of ETH less than your balance.",
+    BUY_CONFIRMATION_TEXT: "*%s ETH* -> *%s %s*.\n%s\nDo you want to proceed?",
     BUY_SUCCESS: "Transaction completed successfully!",
     BUY_INSUFFICIENT_FUNDS_TEXT: "You have insufficient ETH to make a purchase.",
 
@@ -98,6 +115,14 @@ Enter the amount to spend or choose from the options below:`,
     SELL_CONFIRMATION_TEXT: "*%s %s* -> *%s %s*.\n\nDo you want to proceed?",
     SELL_PERCENTAGE_ERROR: "Invalid percentage. Please enter a value between 1 and 100.",
     SELL_SUCCESS: "Successfully sold!",
+
+    POSITIONS_MORE_TEXT: "More %s positions",
+    POSITIONS_NO_MORE_TEXT: "More %s positions",
+    POSITIONS_NO_POSITIONS_TEXT: "You currently have no positions. Start by making a trade!",
+    POSITIONS_NO_MORE_POSITIONS_TEXT: "You have no more positions.",
+
+    WARNING_LOW_BALANCE: "_Maintain at least %s %s for proper fee handling_",
+    WARNING_LOW_BALANCE_AFTER_BUY: "*WARNING!* _Your balance will drop below %s %s, risking future selling fees._"
 } as const;
 
 export function formatMessage(template: string, ...args: any[]): string {

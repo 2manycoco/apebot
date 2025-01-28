@@ -4,7 +4,6 @@ import {Actions, ActionValues} from "../actions";
 import {FlowId, FlowValues} from "./flow_ids";
 import {formatMessage, Strings} from "../resources/strings";
 import {Address, BN, WalletUnlocked} from "fuels";
-import {TRADE_ASSET} from "../../fuel/asset/contracts";
 import {DexClient} from "../../dex/dex_client";
 import {withProgress} from "../help_functions";
 import {isValidFuelAddress, transferWithFeeAdjustment} from "../../fuel/functions";
@@ -72,7 +71,7 @@ export class WithdrawFlow extends Flow {
                 return true;
             }
 
-            if (action === Actions.ACCEPT) {
+            if (action === Actions.CONFIRM) {
                 await withProgress(this.ctx, async () => {
                     const destinationAddress = Address.fromAddressOrString(this.enteredAddress);
                     await retry(() => {

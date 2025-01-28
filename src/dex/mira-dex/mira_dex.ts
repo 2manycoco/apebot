@@ -7,7 +7,13 @@ import {
 } from "fuels";
 import {DexInterface} from "../dex.interface";
 import {buildPoolId, getLPAssetId, MiraAmm, PoolId, ReadonlyMiraAmm} from "mira-dex-ts";
-import {applySlippageBN, futureDeadline} from "../../fuel/functions";
+import {
+    addFeeToTransaction,
+    applySlippageBN,
+    calculateAmountAfterFee,
+    futureDeadline,
+    getServiceFee
+} from "../../fuel/functions";
 import {TokenInfo} from "../model";
 import {retry} from "../../utils/call_helper";
 import {CONTRACTS} from "../../fuel/asset/contracts";
@@ -20,6 +26,8 @@ dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 const MIRA_POOL_TOKEN_SYMBOL = "MIRA-LP"
 const POOL_NOT_FOUND_ERROR = "Pool not found";
 const contractId = process.env.MIRA_CONTRACT_ID;
+
+const scalingFactor = new BN(10000);
 
 export class MiraDex implements DexInterface {
     private readonly wallet: WalletUnlocked;
@@ -55,8 +63,8 @@ export class MiraDex implements DexInterface {
 
         return {
             assetId: assetId.bits,
-            name: assetInfo.name || "Unknown",
-            symbol: symbol,
+            name: assetInfo.name?.toString() || "Unknown",
+            symbol: symbol?.toString(),
             decimals: assetInfo.decimals || 0,
         };
     }
@@ -75,35 +83,53 @@ export class MiraDex implements DexInterface {
     }
 
     async swap(assetIn: AssetId, assetOut: AssetId, amount: BN, slippage: number): Promise<TransactionResult> {
-        const amountOutMin = await this.getSwapAmount(assetIn, assetOut, amount);
-        const amountOutMinWithSlippage = applySlippageBN(amountOutMin, slippage);
-
-        if (amountOutMinWithSlippage.lte(new BN(0))) {
-            throw new Error('Adjusted amountOutMin is less than or equal to 0 after subtracting commission.');
-        }
-
-        const deadline = await futureDeadline(this.provider);
-        const txParams = {
-            gasLimit: 999999,
-            maxFee: 999999,
-        };
-
         const txRequest = await this.handlePoolNotFound(
-            async (pools) => this.miraAmm.swapExactInput(
-                amount,
-                assetIn,
-                amountOutMinWithSlippage,
-                pools,
-                deadline,
-                txParams
-            ),
+            async (pools) => {
+                const {
+                    amountWithoutFees,
+                    amountCalculated
+                } = await this.calculateAmountOutMin(assetIn, assetOut, amount, pools.length, slippage);
+
+                const txParams = {
+                    gasLimit: new BN(999999),
+                    maxFee: new BN(999999),
+                    tip: new BN(200),
+                };
+
+                let retries = 0;
+                const maxRetries = 2;
+                while (true) {
+                    const deadline = await futureDeadline(this.provider);
+
+                    try {
+                        return retry(() => {
+                            return this.miraAmm.swapExactInput(
+                                amount,
+                                assetIn,
+                                amountCalculated,
+                                pools,
+                                deadline,
+                                txParams
+                            )
+                        }, 3)
+                    } catch (e) {
+                        if (retries < maxRetries) {
+                            txParams.gasLimit = txParams.gasLimit.mul(new BN(110)).div(new BN(100));
+                            txParams.maxFee = txParams.maxFee.mul(new BN(110)).div(new BN(100));
+                            retries++;
+                        } else {
+                            throw e
+                        }
+                    }
+                }
+            },
             assetIn,
             assetOut
         );
 
         const txCost = await this.wallet.getTransactionCost(txRequest);
-        txRequest.gasLimit = txCost.gasUsed.add(new BN(10000));
-        txRequest.maxFee = txCost.maxFee;
+        txRequest.gasLimit = txCost.gasUsed.mul(new BN(105)).div(new BN(100));
+        txRequest.maxFee = txCost.maxFee.mul(new BN(105)).div(new BN(100));
         await this.wallet.fund(txRequest, txCost);
 
         const tx = await this.wallet.sendTransaction(txRequest);
@@ -125,6 +151,35 @@ export class MiraDex implements DexInterface {
             return rate * scaleFactor;
         });
     }
+
+    async calculateAmountOutMin(
+        assetIn: AssetId,
+        assetOut: AssetId,
+        amount: BN,
+        poolsCount: number,
+        slippage: number
+    ): Promise<{ amountWithoutFees: BN; amountCalculated: BN }> {
+        const expectedAmountOut = await this.getSwapAmount(assetIn, assetOut, amount);
+
+        const serviceFee = getServiceFee()
+        const slippageBP = new BN(Math.floor(slippage * 100));
+
+        const totalPercentage = slippageBP.add(serviceFee).mul(poolsCount);
+
+        const amountAfterAllDeductions = expectedAmountOut
+            .mul(scalingFactor.sub(totalPercentage))
+            .div(scalingFactor);
+
+        if (amountAfterAllDeductions.lte(new BN(0))) {
+            throw new Error('Adjusted amountOutMin is less than or equal to 0 after subtracting fees and slippage.');
+        }
+
+        return {
+            amountWithoutFees: expectedAmountOut,
+            amountCalculated: amountAfterAllDeductions,
+        };
+    }
+
 
     private createEthRoute(assetIn: AssetId, assetOut: AssetId): PoolId[] {
         const poolInEthId = buildPoolId(assetIn, CONTRACTS.ASSET_ETH, false);
