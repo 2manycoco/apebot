@@ -43,7 +43,9 @@ export class BuyFlow extends Flow {
 
     public async start(): Promise<void> {
         if (!this.assetId) {
-            await this.ctx.reply(Strings.BUY_ENTER_ASSET, {parse_mode: "Markdown"});
+            await this.handleMessageResponse(async () => {
+                return await this.ctx.reply(Strings.BUY_ENTER_ASSET, {parse_mode: "Markdown"});
+            })
             return;
         }
 

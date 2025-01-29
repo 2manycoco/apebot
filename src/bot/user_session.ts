@@ -146,6 +146,7 @@ export class UserSession {
         const {type, symbol, id, percentage} = action;
 
         if (type == "SELL") {
+            await this.cleanActiveFlow()
             await this.startSell(symbol, percentage)
             return true;
         }

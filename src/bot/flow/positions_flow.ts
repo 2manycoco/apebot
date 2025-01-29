@@ -9,7 +9,6 @@ import {Actions, ActionValues, TemplateActions, TemplateActionValues} from "../a
 import {formatPercentage, formatTokenNumber, withProgress} from "../help_functions";
 import {formatMessage, Strings} from "../resources/strings";
 import {CONTRACTS} from "../../fuel/asset/contracts";
-import {InlineKeyboardMarkup} from "@telegraf/types/markup";
 
 interface Pagination {
     offset: number;
@@ -20,6 +19,7 @@ interface MessageMap {
     generatedId: number;
     messageId: number;
     positionId: string;
+    assetSymbol: string;
 }
 
 interface PositionData {
@@ -84,6 +84,7 @@ export class PositionsFlow extends Flow {
                             generatedId: id,
                             messageId: sentMessage.message_id,
                             positionId: position.positionId,
+                            assetSymbol: tokenInfoOut.symbol
                         });
                         shownCount++;
 
@@ -254,7 +255,7 @@ export class PositionsFlow extends Flow {
                         undefined,
                         message + "\n_Refreshed_",
                         {
-                            ...this.generatePositionButtons(symbol, id),
+                            ...this.generatePositionButtons(mapEntry.assetSymbol, id),
                             parse_mode: "Markdown",
                         }
                     );
