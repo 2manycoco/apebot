@@ -5,7 +5,7 @@ import {Message} from "@telegraf/types";
 
 export async function replyMenu(ctx: Context, walletAddress: string, amount: number, symbol: string, prices: string, warning: string = "") {
     const warningMessage = warning ? `\n${warning}` : "";
-    const message = formatMessage(Strings.MENU_TEXT + warning, walletAddress, prices, amount, symbol, warningMessage);
+    const message = formatMessage(Strings.MENU_TEXT + warningMessage, walletAddress, prices, amount, symbol);
     await ctx.reply(message, {
         parse_mode: "Markdown",
         ...Markup.inlineKeyboard(
