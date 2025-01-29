@@ -57,7 +57,8 @@ export class BuyFlow extends Flow {
             this.tokenInfo = await this.userDexClient.getTokenInfo(this.assetId!);
 
             if (!this.tokenInfo.isBounded) {
-                await this.ctx.reply(Strings.SWAP_TOKEN_NOT_BOUNDED_ERROR, {parse_mode: "Markdown"});
+                await this.ctx.reply(formatMessage(Strings.SWAP_TOKEN_SYMBOL_NOT_BOUNDED_ERROR, this.tokenInfo.symbol),
+                    {parse_mode: "Markdown"});
                 this.step = "COMPLETED";
                 return Promise.resolve(false);
             }

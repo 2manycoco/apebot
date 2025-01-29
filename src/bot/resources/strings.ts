@@ -94,6 +94,7 @@ Available: *%s* %s (%s %s)`,
     SWAP_PERCENTAGE_ERROR: "Invalid value. Please enter a number between 1 and 100.",
     SWAP_CONFIRMATION_TEXT: "*%s %s* -> *%s %s*",
     SWAP_SUCCESS: "Transaction completed successfully!",
+    SWAP_TOKEN_SYMBOL_NOT_BOUNDED_ERROR: "*%s* is not bonded and cannot be swapped.",
     SWAP_TOKEN_NOT_BOUNDED_ERROR: "This token is not bonded and cannot be swapped.",
 
     BUY_ENTER_ASSET: "Please enter the contract address of the token you want to buy:",
