@@ -30,23 +30,33 @@ export async function replyMenu(ctx: Context, walletAddress: string, amount: num
     });
 }
 
-export async function replyBalance(ctx: Context, balances: Array<[string, string, string]>, sumAmount: number, symbol: string) {
+export async function replyBalance(
+    ctx: Context,
+    balances: Array<[string, string, string, boolean]>,
+    sumAmount: number,
+    symbol: string
+) {
     const maxSymbolLength = balances.reduce((max, [, symbol]) => Math.max(max, symbol.length), 0);
-    const balancesMessage = balances
+
+    const boundedBalances = balances.filter(([, , , isBounded]) => isBounded);
+    const unboundedBalances = balances.filter(([, , , isBounded]) => !isBounded);
+
+    const boundedMessage = boundedBalances
         .map(([, symbol, amount]) => `*${symbol.padEnd(maxSymbolLength)}:* \`${amount}\``)
         .join("\n");
 
-    let amountFixed: string
-    if (sumAmount != 0) {
-        amountFixed = sumAmount.toFixed(5)
-    } else {
-        amountFixed = sumAmount.toFixed(2)
-    }
+    const unboundedMessage = unboundedBalances.length > 0
+        ? `\n\n_${Strings.UNBOUNDED_ASSETS_LABEL}_\n` + // Заголовок
+        unboundedBalances.map(([, symbol, amount]) => `*${symbol.padEnd(maxSymbolLength)}:* \`${amount}\``).join("\n")
+        : "";
 
-    const message = formatMessage(Strings.BALANCE_TEXT, balancesMessage, amountFixed, symbol);
+    const amountFixed = sumAmount !== 0 ? sumAmount.toFixed(5) : sumAmount.toFixed(2);
 
-    await ctx.reply(message, {parse_mode: "Markdown"});
+    const message = formatMessage(Strings.BALANCE_TEXT, boundedMessage + unboundedMessage, amountFixed, symbol);
+
+    await ctx.reply(message, { parse_mode: "Markdown" });
 }
+
 
 export async function replyWalletPK(ctx: Context, walletPK: string) {
     const message = formatMessage(Strings.WALLET_PK_TEXT, walletPK);

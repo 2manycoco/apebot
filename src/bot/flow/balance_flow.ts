@@ -29,19 +29,21 @@ export class BalanceFlow extends Flow {
 
     private async showBalance(): Promise<void> {
         let totalBalance = 0;
-        let balances: Array<[string, string, string]> = [];
+        let balances: Array<[string, string, string, boolean]> = [];
 
         await withProgress(this.ctx, async () => {
             balances = await this.userDexClient.getBalances();
-            for (const [assetId, symbol, amount] of balances) {
+            for (const [assetId, symbol, amount, isBounded] of balances) {
                 const balanceAmount = parseFloat(amount);
                 if (symbol === TRADE_ASSET.symbol) {
                     totalBalance += balanceAmount;
                 } else {
                     try {
-                        const rate = await this.userDexClient.getRate(assetId, TRADE_ASSET.bits);
-                        const equivalent = balanceAmount * rate;
-                        totalBalance += equivalent;
+                        if(isBounded) {
+                            const rate = await this.userDexClient.getRate(assetId, TRADE_ASSET.bits);
+                            const equivalent = balanceAmount * rate;
+                            totalBalance += equivalent;
+                        }
                     } catch (error) {
                         console.warn(`Failed to fetch rate for asset ${symbol}: ${error.message}`);
                     }

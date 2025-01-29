@@ -5,7 +5,7 @@ import {FlowId, FlowValues} from "./flow_ids";
 import {formatMessage, Strings} from "../resources/strings";
 import {Address, BN, WalletUnlocked} from "fuels";
 import {DexClient} from "../../dex/dex_client";
-import {withProgress} from "../help_functions";
+import {shortAddress, withProgress} from "../help_functions";
 import {isValidFuelAddress, transferWithFeeAdjustment} from "../../fuel/functions";
 import {retry} from "../../utils/call_helper";
 import {TokenInfo} from "../../dex/model";
@@ -146,7 +146,7 @@ export class WithdrawFlow extends Flow {
     }
 
     private async confirmTransfer(): Promise<void> {
-        const formattedAddress = `*${this.enteredAddress!.slice(0, 4)}*${this.enteredAddress!.slice(4, 7)}...${this.enteredAddress!.slice(-7, -4)}*${this.enteredAddress!.slice(-4)}*`;
+        const formattedAddress = shortAddress(this.enteredAddress!, true)
         const confirmationMessage = `${this.transferAmount} ${this.assetInfo.symbol} -> ${formattedAddress}`;
 
         this.step = "CONFIRMATION";

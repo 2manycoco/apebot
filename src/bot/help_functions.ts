@@ -79,3 +79,8 @@ export function formatPercentage(value: number): string {
         return `${value.toFixed(3)}`;
     }
 }
+
+export function shortAddress(address: string, withMarkdown: boolean): string {
+    const styleSymbol = withMarkdown ? "*" : "";
+    return`${styleSymbol}${address.slice(0, 4)}${styleSymbol}${address.slice(4, 7)}...${address.slice(-7, -4)}${styleSymbol}${address.slice(-4)}${styleSymbol}`;
+}

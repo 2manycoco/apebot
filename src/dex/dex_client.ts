@@ -9,6 +9,8 @@ import {getVerifiedAssets} from "../fuel/asset/verified_assets_provider";
 import dotenv from "dotenv";
 import path from "node:path";
 import {MIN_OPERATION_VALUE} from "../fuel/constants";
+import {FuelUpDex} from "./fuelup-fun/fuelup_dex";
+import {shortAddress} from "../bot/help_functions";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -20,21 +22,7 @@ export class DexClient {
     constructor(provider: Provider, wallet: WalletUnlocked) {
         this.wallet = wallet;
         this.dexArray.push(new MiraDex(provider, wallet));
-    }
-
-    async calculateSwapAmount(assetIn: string, assetOut: string, amount: number): Promise<number> {
-        const assetInId = {bits: assetIn};
-        const assetOutId = {bits: assetOut};
-
-        const tokenInfoOut = await this.getTokenInfo(assetOut);
-        const decimalsOut = tokenInfoOut.decimals;
-
-        const amountBN = await this.getTokenAmountBN(assetIn, amount);
-        const result = await this.getBestRate(assetInId, assetOutId, amountBN);
-
-        const maxAmount = result.maxAmount.toNumber();
-
-        return maxAmount / Math.pow(10, decimalsOut);
+        this.dexArray.push(new FuelUpDex(provider, wallet));
     }
 
     async getBalance(asset: string): Promise<[number, BN]> {
@@ -45,11 +33,11 @@ export class DexClient {
         return [amount, amountBN];
     }
 
-    async getBalances(): Promise<Array<[string, string, string]>> {
+    async getBalances(): Promise<Array<[string, string, string, boolean]>> {
         const balances = await retry(
             async () => await this.wallet.getBalances()
         );
-        const balancePairs: Array<[string, string, string]> = [];
+        const balancePairs: Array<[string, string, string, boolean]> = [];
 
         for (const balance of balances.balances) {
             try {
@@ -57,11 +45,11 @@ export class DexClient {
                 const readableAmount =
                     parseFloat(balance.amount.toString()) / Math.pow(10, tokenInfo.decimals);
 
-                balancePairs.push([balance.assetId, tokenInfo.symbol.toString(), readableAmount.toFixed(tokenInfo.decimals)]);
+                balancePairs.push([balance.assetId, tokenInfo.symbol.toString(), readableAmount.toFixed(tokenInfo.decimals), tokenInfo.isBounded]);
             } catch (error) {
                 console.info(`Failed to fetch token info for asset ID ${balance.assetId}: ${error.message}`);
                 const readableAmount = parseFloat(balance.amount.toString());
-                balancePairs.push([balance.assetId, balance.assetId, readableAmount.toString()]);
+                balancePairs.push([balance.assetId, shortAddress(balance.assetId, false), readableAmount.toString(), false]);
             }
         }
 
@@ -71,13 +59,14 @@ export class DexClient {
     async getTokenInfo(asset: string): Promise<TokenInfo> {
         const verifiedAssets = await getVerifiedAssets();
         const matchedAsset = verifiedAssets.find((verified) => verified.assetId === asset);
-
+        
         if (matchedAsset) {
             return {
                 assetId: matchedAsset.assetId,
                 name: matchedAsset.name,
                 symbol: matchedAsset.symbol,
                 decimals: matchedAsset.decimals,
+                isBounded: true,
             };
         }
 
@@ -116,6 +105,21 @@ export class DexClient {
         }
 
         throw new Error(`Unable to fetch rate for assetIn: ${assetIn}, assetOut: ${assetOut}`);
+    }
+
+    async calculateSwapAmount(assetIn: string, assetOut: string, amount: number): Promise<number> {
+        const assetInId = {bits: assetIn};
+        const assetOutId = {bits: assetOut};
+
+        const tokenInfoOut = await this.getTokenInfo(assetOut);
+        const decimalsOut = tokenInfoOut.decimals;
+
+        const amountBN = await this.getTokenAmountBN(assetIn, amount);
+        const result = await this.getBestRate(assetInId, assetOutId, amountBN);
+
+        const maxAmount = result.maxAmount.toNumber();
+
+        return maxAmount / Math.pow(10, decimalsOut);
     }
 
     async swap(assetIn: string, assetOut: string, amount: number, slippage: number): Promise<boolean> {

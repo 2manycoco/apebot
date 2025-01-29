@@ -42,6 +42,7 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
 _\\(This message will auto\\-delete in 30 seconds\\)_
      
 ||%s||`,
+    UNBOUNDED_ASSETS_LABEL: "Unbounded:",
 
     INVALID_ADDRESS_TEXT: "Invalid address",
     BUTTON_CANCEL: "Cancel",
@@ -93,6 +94,7 @@ Available: *%s* %s (%s %s)`,
     SWAP_PERCENTAGE_ERROR: "Invalid value. Please enter a number between 1 and 100.",
     SWAP_CONFIRMATION_TEXT: "*%s %s* -> *%s %s*",
     SWAP_SUCCESS: "Transaction completed successfully!",
+    SWAP_TOKEN_NOT_BOUNDED_ERROR: "This token is not bonded and cannot be swapped.",
 
     BUY_ENTER_ASSET: "Please enter the contract address of the token you want to buy:",
     BUY_ENTER_ASSET_ERROR: "Invalid contract address. Please try again.",

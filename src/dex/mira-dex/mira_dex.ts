@@ -66,6 +66,7 @@ export class MiraDex implements DexInterface {
             name: assetInfo.name?.toString() || "Unknown",
             symbol: symbol?.toString(),
             decimals: assetInfo.decimals || 0,
+            isBounded: true,
         };
     }
 

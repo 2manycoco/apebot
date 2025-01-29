@@ -6,7 +6,7 @@ import {formatMessage, Strings} from "../resources/strings";
 import {formatTokenNumber, withProgress} from "../help_functions";
 import {DexClient} from "../../dex/dex_client";
 import {TokenInfo} from "../../dex/model";
-import {CONTRACTS} from "../../fuel/asset/contracts";
+import {CONTRACTS, TRADE_ASSET} from "../../fuel/asset/contracts";
 import {replyConfirmMessage} from "../session_message_builder";
 import {getTransactionRepository} from "../../database/transaction_repository";
 import {Position, Transaction} from "../../database/entities";
@@ -53,7 +53,14 @@ export class BuyFlow extends Flow {
     private async processAsset(): Promise<void> {
         const result = await withProgress(this.ctx, async () => {
             this.tokenInfo = await this.userDexClient.getTokenInfo(this.assetId!);
-            const [ethBalance] = await this.userDexClient.getBalance(CONTRACTS.ASSET_ETH.bits);
+
+            if (!this.tokenInfo.isBounded) {
+                await this.ctx.reply(Strings.SWAP_TOKEN_NOT_BOUNDED_ERROR, {parse_mode: "Markdown"});
+                this.step = "COMPLETED";
+                return Promise.resolve(false);
+            }
+
+            const [ethBalance] = await this.userDexClient.getBalance(TRADE_ASSET.bits);
             this.tradeBalance = ethBalance;
 
             if (ethBalance === 0) {

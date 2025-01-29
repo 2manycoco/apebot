@@ -30,6 +30,8 @@ import {LOW_BALANCE_VALUE} from "../fuel/constants";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
+const deletePKMessageTimeout = 30000
+
 export class UserSession {
     private ctx: Context;
     private userId: number;
@@ -55,6 +57,7 @@ export class UserSession {
     }
 
     async handleCommand(command: CommandValues) {
+
         trackUserAnalytics(this.ctx, AnalyticsEvents.UserCommand, {
             command_name: command
         })
@@ -115,8 +118,6 @@ export class UserSession {
             return this.activeFlow.handleAction(action)
         })
         if (isIntercepted) return
-
-        await this.cleanActiveFlow()
 
         if (await this.handleMenuAction(action)) {
             return
@@ -259,6 +260,7 @@ export class UserSession {
     // ---------- Main simple action ----------
 
     private async showMenu(): Promise<void> {
+        await this.cleanActiveFlow()
         const walletAddress = this.wallet.address.toString()
         let amount: number
         let prices: string
@@ -283,8 +285,9 @@ export class UserSession {
     }
 
     private async showWalletPK(): Promise<void> {
-        const walletPK = this.wallet.privateKey
+        await this.cleanActiveFlow()
 
+        const walletPK = this.wallet.privateKey
         const message = await replyWalletPK(this.ctx, walletPK);
 
         setTimeout(async () => {
@@ -293,7 +296,7 @@ export class UserSession {
             } catch (error) {
                 console.error("Failed to delete wallet PK message:", error.message);
             }
-        }, 30000);
+        }, deletePKMessageTimeout);
     }
 
     private async withdrawFunds(): Promise<void> {

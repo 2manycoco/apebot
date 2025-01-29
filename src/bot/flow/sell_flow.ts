@@ -50,7 +50,7 @@ export class SellFlow extends Flow {
     private async handleSymbolSelection(): Promise<void> {
         const balances = await this.userDexClient.getBalances();
         const selectedAsset = balances
-            .filter(([assetId]) => assetId !== this.tradeAsset.bits)
+            .filter(([assetId, , , isBounded]) => (assetId !== this.tradeAsset.bits && isBounded))
             .map(([assetId, symbol, amount]) => ({
                 assetId,
                 symbol,
@@ -71,8 +71,9 @@ export class SellFlow extends Flow {
 
         if (this.percentage !== null) {
             if (this.percentage <= 0 || this.percentage > 100) {
-                await this.ctx.reply(Strings.SELL_PERCENTAGE_ERROR, {parse_mode: "Markdown"});
-                this.step = "COMPLETED";
+                await this.handleMessageResponse(async () => {
+                    return await this.ctx.reply(Strings.SELL_PERCENTAGE_ERROR, {parse_mode: "Markdown"});
+                });
                 return;
             }
             this.percentageToSell = this.percentage;
@@ -85,7 +86,7 @@ export class SellFlow extends Flow {
     private async displayAssetSelection(): Promise<void> {
         const result = await withProgress(this.ctx, async () => {
             const balances = await this.userDexClient.getBalances();
-            const nonEthBalances = balances.filter(([assetId]) => assetId !== this.tradeAsset.bits);
+            const nonEthBalances = balances.filter(([assetId, , , isBounded]) => (assetId !== this.tradeAsset.bits && isBounded));
 
             if (nonEthBalances.length === 0) {
                 await this.ctx.reply(Strings.SELL_NO_ASSETS_TEXT, {parse_mode: "Markdown"});
@@ -96,7 +97,7 @@ export class SellFlow extends Flow {
             this.assetsList = await Promise.all(
                 nonEthBalances.map(async ([assetId, symbol, amount]) => {
                     const balance = parseFloat(amount);
-                    let priceInUsdc: string | null = null;
+                    let priceInUsdc: string | null;
                     try {
                         let usdcRate = 0
                         if (CONTRACTS.ASSET_USDC.bits != assetId) {
@@ -137,7 +138,9 @@ export class SellFlow extends Flow {
                 }, [] as Array<Array<ReturnType<typeof Markup.button.callback>>>)
             );
 
-            await this.ctx.reply(formatMessage(Strings.SELL_START_TEXT_ASSET, balancesText), {parse_mode: "Markdown", ...keyboard});
+            await this.handleMessageResponse(async () => {
+                return await this.ctx.reply(formatMessage(Strings.SELL_START_TEXT_ASSET, balancesText), {parse_mode: "Markdown", ...keyboard});
+            })
 
             return Promise.resolve(true);
         });
@@ -148,7 +151,8 @@ export class SellFlow extends Flow {
     private async promptPercentageSelection(): Promise<void> {
         const message = formatMessage(
             Strings.SELL_ENTER_PERCENTAGE,
-            this.asset.symbol
+            this.asset.symbol,
+            this.tradeAsset.symbol
         );
 
         this.step = "INPUT_PERCENTAGE";
@@ -223,7 +227,8 @@ export class SellFlow extends Flow {
 
         const message = formatMessage(
             Strings.SELL_ENTER_PERCENTAGE,
-            this.asset.symbol
+            this.asset.symbol,
+            this.tradeAsset.symbol
         );
 
         this.step = "INPUT_PERCENTAGE";
@@ -304,6 +309,6 @@ export class SellFlow extends Flow {
     }
 
     isFinished(): boolean {
-        return false;
+        return this.step == "COMPLETED";
     }
 }
