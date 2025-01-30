@@ -24,6 +24,8 @@ const FEE_PERCENTAGE = parseFloat(process.env.FEE_PERCENTAGE)
 const FEE_RECIPIENT = Address.fromAddressOrString(process.env.FEE_RECIPIENT)
 const scalingFactor = new BN(10000);
 
+const serviceFee = new BN(FEE_PERCENTAGE);
+
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
 export async function createProvider(): Promise<Provider> {
@@ -35,7 +37,7 @@ export async function createProvider(): Promise<Provider> {
             baseDelay: 300
         }
     };
-
+    
     const provider = await Provider.create(RPC_URL, providerOptions);
     const version = await provider.getVersion()
     console.log(`Provider initialized successfully: ${version}`);
@@ -130,7 +132,7 @@ export function applySlippageBN(amount: BN, slippage: number): BN {
 }
 
 export function getServiceFee(): BN {
-    return new BN(FEE_PERCENTAGE);
+    return serviceFee;
 }
 
 /**

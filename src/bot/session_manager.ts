@@ -9,6 +9,7 @@ import {trackUserAnalytics} from "./user_analytics";
 import {Mutex} from "../utils/mutex";
 import {EncryptionManager} from "../utils/encryption_manager";
 import path from "node:path";
+import {AnalyticsEvents} from "../analytics/analytics_events";
 
 dotenv.config();
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
@@ -25,7 +26,7 @@ export class SessionManager {
     private sessions: SessionMap = new Map();
     private mutex = new Mutex();
 
-    private readonly inactivityThreshold = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+    private readonly inactivityThreshold = 10 * 60 * 1000;
 
     private constructor(provider: Provider) {
         this.provider = provider
@@ -41,19 +42,16 @@ export class SessionManager {
         return SessionManager.instance;
     }
 
-    // Create or retrieve an existing session for a user
     public async getSession(ctx: Context, userId: number): Promise<UserSession> {
         const existingSession = this.sessions.get(userId);
         if (existingSession) {
-            existingSession.lastActivity = new Date(); // Update last activity
+            existingSession.lastActivity = new Date();
             return existingSession.session;
         }
 
-        // Fetch user data from UserStorage
         let user = await this.userRepository.getUserById(userId);
         let wallet: WalletUnlocked;
 
-        // If user exists, initialize WalletUnlocked from stored data
         if (user) {
             try {
                 wallet = new WalletUnlocked(EncryptionManager.decrypt(user.walletPK), this.provider);
@@ -61,7 +59,6 @@ export class SessionManager {
                 throw new Error(`Failed to initialize wallet for user ${userId}: ${error.message}`);
             }
         } else {
-            // If user doesn't exist, create a new wallet and save the user
             await this.mutex.acquire();
             try {
                 user = await this.userRepository.getUserById(userId);
@@ -91,13 +88,11 @@ export class SessionManager {
             }
         }
 
-        // Create DexClient for the user
         const dexClient = new DexClient(this.provider, wallet);
 
-        // Create a new session
         const newSession = new UserSession(ctx, userId, wallet, dexClient);
         this.sessions.set(userId, {session: newSession, lastActivity: new Date()});
-        trackUserAnalytics(ctx, "user_session_started", {
+        trackUserAnalytics(ctx, AnalyticsEvents.UserSessionStarted, {
             wallet_address: wallet.address.toString()
         })
 
@@ -114,7 +109,7 @@ export class SessionManager {
                     this.sessions.delete(userId);
                 }
             }
-        }, 60 * 60 * 1000); // Run every 1 hour
+        }, 3 * 60 * 1000); // Run every 3 mins
     }
 
     private generateWallet() : WalletUnlocked{
