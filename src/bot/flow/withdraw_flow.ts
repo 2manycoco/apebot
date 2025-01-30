@@ -104,7 +104,7 @@ export class WithdrawFlow extends Flow {
                 await this.handleMessageResponse(async () => {
                     return await this.ctx.reply(Strings.INVALID_ADDRESS_TEXT, {parse_mode: "Markdown"});
                 });
-                return false;
+                return true;
             }
 
             this.enteredAddress = message;
@@ -126,14 +126,14 @@ export class WithdrawFlow extends Flow {
                 await this.handleMessageResponse(async () => {
                     return await this.ctx.reply(Strings.WITHDRAW_INPUT_AMOUNT_ERROR, { parse_mode: "Markdown" });
                 });
-                return false;
+                return true;
             }
 
             if (amount > this.userBalance) {
                 await this.handleMessageResponse(async () => {
                     return await this.ctx.reply(Strings.WITHDRAW_AMOUNT_ERROR, { parse_mode: "Markdown" });
                 });
-                return false;
+                return true;
             }
 
             this.transferAmount = amount;
