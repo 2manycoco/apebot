@@ -37,7 +37,7 @@ export async function createProvider(): Promise<Provider> {
             baseDelay: 300
         }
     };
-    
+
     const provider = await Provider.create(RPC_URL, providerOptions);
     const version = await provider.getVersion()
     console.log(`Provider initialized successfully: ${version}`);

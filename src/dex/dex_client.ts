@@ -14,6 +14,8 @@ import {shortAddress} from "../bot/help_functions";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
+const hideBalanceAmount = new BN(1)
+
 export class DexClient {
     private wallet: WalletUnlocked
     private dexArray: DexInterface[] = [];
@@ -41,11 +43,13 @@ export class DexClient {
 
         for (const balance of balances.balances) {
             try {
-                const tokenInfo = await this.getTokenInfo(balance.assetId);
-                const readableAmount =
-                    parseFloat(balance.amount.toString()) / Math.pow(10, tokenInfo.decimals);
+                if (!balance.amount.eq(hideBalanceAmount)) {
+                    const tokenInfo = await this.getTokenInfo(balance.assetId);
+                    const readableAmount =
+                        parseFloat(balance.amount.toString()) / Math.pow(10, tokenInfo.decimals);
 
-                balancePairs.push([balance.assetId, tokenInfo.symbol.toString(), readableAmount.toFixed(tokenInfo.decimals), tokenInfo.isBounded]);
+                    balancePairs.push([balance.assetId, tokenInfo.symbol.toString(), readableAmount.toFixed(tokenInfo.decimals), tokenInfo.isBounded]);
+                }
             } catch (error) {
                 console.info(`Failed to fetch token info for asset ID ${balance.assetId}: ${error.message}`);
                 const readableAmount = parseFloat(balance.amount.toString());
@@ -59,7 +63,7 @@ export class DexClient {
     async getTokenInfo(asset: string): Promise<TokenInfo> {
         const verifiedAssets = await getVerifiedAssets();
         const matchedAsset = verifiedAssets.find((verified) => verified.assetId === asset);
-        
+
         if (matchedAsset) {
             return {
                 assetId: matchedAsset.assetId,
