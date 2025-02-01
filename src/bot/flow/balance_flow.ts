@@ -13,7 +13,7 @@ export class BalanceFlow extends Flow {
         ctx: Context,
         userId: number,
         userDexClient: DexClient,
-        onCompleteCallback?: (flowId: string) => void
+        onCompleteCallback?: (flowId: string, successful: Boolean) => void
     ) {
         super(ctx, userId, onCompleteCallback);
         this.userDexClient = userDexClient;

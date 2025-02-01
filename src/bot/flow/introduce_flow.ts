@@ -9,7 +9,7 @@ export class IntroduceFlow extends Flow {
 
     private isUserAccept = false
 
-    constructor(ctx: Context, userId: number, onCompleteCallback?: (flowId: string) => void) {
+    constructor(ctx: Context, userId: number, onCompleteCallback?: (flowId: string, successful: Boolean) => void) {
         super(ctx, userId, onCompleteCallback);
     }
 

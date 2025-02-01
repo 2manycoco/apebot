@@ -14,9 +14,9 @@ export abstract class Flow {
     protected analytics: AnalyticsService;
     protected userManager: UserManager;
     private sentMessageIds: number[] = [];
-    private readonly onCompleteCallback?: (flowId: string) => void;
+    private readonly onCompleteCallback?: (flowId: string, successful: Boolean) => void;
 
-    protected constructor(ctx: Context, userId: number, onCompleteCallback?: (flowId: string) => void) {
+    protected constructor(ctx: Context, userId: number, onCompleteCallback?: (flowId: string, successful: Boolean) => void) {
         this.userId = userId;
         this.ctx = ctx;
         this.logger = Logger.getInstance();
@@ -68,9 +68,13 @@ export abstract class Flow {
         if (this.isFinished()) {
             await this.cleanup()
             if (this.onCompleteCallback) {
-                this.onCompleteCallback(this.getFlowId());
+                this.onCompleteCallback(this.getFlowId(), this.isSuccessful());
             }
         }
+    }
+
+    protected isSuccessful(): boolean {
+        return true
     }
 
     protected abstract isFinished(): boolean;

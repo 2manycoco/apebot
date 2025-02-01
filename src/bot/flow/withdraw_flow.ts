@@ -31,7 +31,7 @@ export class WithdrawFlow extends Flow {
         userWallet: WalletUnlocked,
         userDexClient: DexClient,
         assetId: string,
-        onCompleteCallback?: (flowId: string) => void
+        onCompleteCallback?: (flowId: string, successful: Boolean) => void
     ) {
         super(ctx, userId, onCompleteCallback);
         this.userWallet = userWallet;

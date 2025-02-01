@@ -242,13 +242,15 @@ export class UserSession {
      * Callback to handle the completion of a Flow.
      * @param flowId - The identifier of the completed Flow.
      */
-    private async onFlowCompleted(flowId: FlowValues) {
+    private async onFlowCompleted(flowId: FlowValues, successful: Boolean) {
         this.activeFlow = null;
         switch (flowId) {
             case FlowId.SWAP_FLOW:
             case FlowId.BUY_FLOW:
             case FlowId.SELL_FLOW:
-                await this.showBalance()
+                if(successful) {
+                    await this.showBalance()
+                }
                 return true;
             case FlowId.BALANCE_FLOW:
             case FlowId.POSITIONS_FLOW:
@@ -280,8 +282,8 @@ export class UserSession {
     }
 
     private async showBalance(): Promise<void> {
-        return await this.startFlow(new BalanceFlow(this.ctx, this.userId, this.dexClient, (flowId: FlowValues) => {
-            this.onFlowCompleted(flowId);
+        return await this.startFlow(new BalanceFlow(this.ctx, this.userId, this.dexClient, (flowId: FlowValues, successful: Boolean) => {
+            this.onFlowCompleted(flowId, successful);
         }));
     }
 
@@ -301,38 +303,38 @@ export class UserSession {
     }
 
     private async withdrawFunds(): Promise<void> {
-        await this.startFlow(new WithdrawFlow(this.ctx, this.userId, this.wallet, this.dexClient, TRADE_ASSET.bits, (flowId: FlowValues) => {
-            this.onFlowCompleted(flowId);
+        await this.startFlow(new WithdrawFlow(this.ctx, this.userId, this.wallet, this.dexClient, TRADE_ASSET.bits, (flowId: FlowValues, successful: Boolean) => {
+            this.onFlowCompleted(flowId, successful);
         }));
     }
 
     private async setSlippage(): Promise<void> {
-        await this.startFlow(new SetSlippageFlow(this.ctx, this.userId, (flowId: FlowValues) => {
-            this.onFlowCompleted(flowId);
+        await this.startFlow(new SetSlippageFlow(this.ctx, this.userId, (flowId: FlowValues, successful: Boolean) => {
+            this.onFlowCompleted(flowId, successful);
         }));
     }
 
     private async startSwap(assertIn: string, assertOut: string, amountPercentage: number | null): Promise<void> {
-        await this.startFlow(new SwapFlow(this.ctx, this.userId, this.dexClient, assertIn, assertOut, amountPercentage, (flowId: FlowValues) => {
-            this.onFlowCompleted(flowId);
+        await this.startFlow(new SwapFlow(this.ctx, this.userId, this.dexClient, assertIn, assertOut, amountPercentage, (flowId: FlowValues, successful: Boolean) => {
+            this.onFlowCompleted(flowId, successful);
         }));
     }
 
     private async showPositions(): Promise<void> {
-        await this.startFlow(new PositionsFlow(this.ctx, this.userId, this.dexClient, (flowId: FlowValues) => {
-            this.onFlowCompleted(flowId);
+        await this.startFlow(new PositionsFlow(this.ctx, this.userId, this.dexClient, (flowId: FlowValues, successful: Boolean) => {
+            this.onFlowCompleted(flowId, successful);
         }));
     }
 
     private async startBuy(assetId: string | null): Promise<void> {
-        await this.startFlow(new BuyFlow(this.ctx, this.userId, this.dexClient, assetId, (flowId: FlowValues) => {
-            this.onFlowCompleted(flowId);
+        await this.startFlow(new BuyFlow(this.ctx, this.userId, this.dexClient, assetId, (flowId: FlowValues, successful: Boolean) => {
+            this.onFlowCompleted(flowId, successful);
         }));
     }
 
     private async startSell(symbol: string | null = null, percentage: number | null = null): Promise<void> {
-        await this.startFlow(new SellFlow(this.ctx, this.userId, this.dexClient, symbol, percentage, (flowId: FlowValues) => {
-            this.onFlowCompleted(flowId);
+        await this.startFlow(new SellFlow(this.ctx, this.userId, this.dexClient, symbol, percentage, (flowId: FlowValues, successful: Boolean) => {
+            this.onFlowCompleted(flowId, successful);
         }));
     }
 
@@ -353,8 +355,8 @@ export class UserSession {
     ): Promise<void> {
         const isAccept = await this.userManager.isAcceptTerms()
         if (!isAccept) {
-            await this.startFlow(new IntroduceFlow(this.ctx, this.userId, (flowId: FlowValues) => {
-                this.onFlowCompleted(flowId);
+            await this.startFlow(new IntroduceFlow(this.ctx, this.userId, (flowId: FlowValues, successful: Boolean) => {
+                this.onFlowCompleted(flowId, successful);
             }));
         } else {
             await afterCall()

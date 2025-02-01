@@ -8,9 +8,6 @@ import {
 import {DexInterface} from "../dex.interface";
 import {buildPoolId, getLPAssetId, MiraAmm, PoolId, ReadonlyMiraAmm} from "mira-dex-ts";
 import {
-    addFeeToTransaction,
-    applySlippageBN,
-    calculateAmountAfterFee,
     futureDeadline,
     getServiceFee
 } from "../../fuel/functions";

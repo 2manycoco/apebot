@@ -21,6 +21,8 @@ export class SwapFlow extends Flow {
     private assetOutInfo: TokenInfo;
     private assetInBalance: number;
 
+    private successful: boolean = false;
+
     constructor(
         ctx: Context,
         userId: number,
@@ -28,7 +30,7 @@ export class SwapFlow extends Flow {
         assetIn: string,
         assetOut: string,
         amountPercentage: number | null = null,
-        onCompleteCallback?: (flowId: string) => void
+        onCompleteCallback?: (flowId: string, successful: Boolean) => void
     ) {
         super(ctx, userId, onCompleteCallback);
         this.userDexClient = userDexClient;
@@ -134,6 +136,7 @@ export class SwapFlow extends Flow {
                     const slippage = await this.userManager.getSlippage()
                     await this.userDexClient.swap(this.assetIn, this.assetOut, this.swapAmount!, slippage);
                     await this.ctx.reply(Strings.SWAP_SUCCESS, {parse_mode: "Markdown"});
+                    this.successful = true;
                     this.step = "COMPLETED";
                 });
                 return true;
@@ -190,6 +193,10 @@ export class SwapFlow extends Flow {
             return Promise.resolve(false);
         }
         return Promise.resolve(true);
+    }
+
+    protected override isSuccessful(): boolean {
+        return this.successful
     }
 
     isFinished(): boolean {

@@ -22,6 +22,7 @@ export class SellFlow extends Flow {
     private percentageToSell: number | null = null;
     private amountToSell: number;
     private expectedOutAmount: number;
+    private successful: boolean = false;
 
     constructor(
         ctx: Context,
@@ -29,7 +30,7 @@ export class SellFlow extends Flow {
         userDexClient: DexClient,
         private symbol: string | null = null,
         private percentage: number | null = null,
-        onCompleteCallback?: (flowId: string) => void
+        onCompleteCallback?: (flowId: string, successful: Boolean) => void
     ) {
         super(ctx, userId, onCompleteCallback);
         this.userDexClient = userDexClient;
@@ -197,6 +198,7 @@ export class SellFlow extends Flow {
                     await this.userDexClient.swap(this.asset.assetId, CONTRACTS.ASSET_ETH.bits, this.amountToSell!, slippage);
                     await this.confirmSell()
                     await this.ctx.reply(Strings.SELL_SUCCESS, {parse_mode: "Markdown"});
+                    this.successful = true;
                     this.step = "COMPLETED";
                 });
                 return true;
@@ -306,6 +308,10 @@ export class SellFlow extends Flow {
                 await repository.deletePosition(position.positionId)
             }
         }
+    }
+
+    protected override isSuccessful(): boolean {
+        return this.successful
     }
 
     isFinished(): boolean {

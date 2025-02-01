@@ -8,7 +8,7 @@ export class SetSlippageFlow extends Flow {
     private step: "SELECTING" | "COMPLETED" = "SELECTING";
     private selectedSlippage: number | null = null;
 
-    constructor(ctx: Context, userId: number, onCompleteCallback?: (flowId: string) => void) {
+    constructor(ctx: Context, userId: number, onCompleteCallback?: (flowId: string, successful: Boolean) => void) {
         super(ctx, userId, onCompleteCallback);
     }
 

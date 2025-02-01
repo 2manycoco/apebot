@@ -25,12 +25,14 @@ export class BuyFlow extends Flow {
     private expectedOutAmount: number | null = null;
     private tokenInfo: TokenInfo;
 
+    private successful: boolean = false;
+
     constructor(
         ctx: Context,
         userId: number,
         userDexClient: DexClient,
         assetId: string | null = null,
-        onCompleteCallback?: (flowId: string) => void
+        onCompleteCallback?: (flowId: string, successful: Boolean) => void
     ) {
         super(ctx, userId, onCompleteCallback);
         this.userDexClient = userDexClient;
@@ -171,6 +173,7 @@ export class BuyFlow extends Flow {
                     await this.userDexClient.swap(this.tradeAsset.bits, this.assetId!, this.amountToSpend!, slippage);
                     await this.confirmBuy();
                     await this.ctx.reply(Strings.BUY_SUCCESS, {parse_mode: "Markdown"});
+                    this.successful = true;
                     this.step = "COMPLETED";
                 });
                 return true;
@@ -234,6 +237,10 @@ export class BuyFlow extends Flow {
 
             await repository.addPosition(position)
         }
+    }
+
+    protected override isSuccessful(): boolean {
+        return this.successful
     }
 
     isFinished(): boolean {
