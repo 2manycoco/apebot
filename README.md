@@ -45,7 +45,7 @@ Using ApeBot is **completely free**! However, standard Fuel network and DEX fees
 
 ## Links 🔗
 
-- **[ApeBot bot](https://t.me/fuel_trade_bot)**: ApeBot on Telegram.
+- **[ApeBot](https://t.me/fuel_trade_bot)**: ApeBot on Telegram.
 - **[ApeBot Documentation](https://tricky-coconut.gitbook.io/ape-bot-on-fuel/about-apebot-on-fuel)**: Detailed guide on how to use the bot.
 - **[Telegram Group](https://t.me/apebotfuel)**: Join the discussion and stay updated.
 - **[Twitter](https://x.com/apebotonfuel)**: Follow us for the latest news and updates.
