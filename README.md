@@ -35,6 +35,14 @@ ApeBot has been engineered with scalability and future integrations in mind:
 
 ---
 
+## Infrastructure & Growth 🚀
+We are dedicated to expanding and improving our service:
+- **Optimized Performance with PostgreSQL**: ApeBot uses a PostgreSQL database to ensure efficient data storage and rapid execution of transactions.
+- **User-Centric Development with Amplitude Analytics**: We do not collect personal data, but we analyze user experience to implement only the most valuable features.
+- **24/7 Availability on Render Cloud**: Our servers run 24/7 on Render Cloud Platform, ensuring stability and reliability.
+
+ApeBot is designed for long-term growth, with continuous updates and new features in development.
+
 ## Fees 💰
 
 Using ApeBot is **completely free**! However, standard Fuel network and DEX fees apply:
