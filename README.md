@@ -43,6 +43,8 @@ We are dedicated to expanding and improving our service:
 
 ApeBot is designed for long-term growth, with continuous updates and new features in development.
 
+---
+
 ## Fees 💰
 
 Using ApeBot is **completely free**! However, standard Fuel network and DEX fees apply:
