@@ -62,4 +62,8 @@ Using ApeBot is **completely free**! However, standard Fuel network and DEX fees
 
 ---
 
+## Disclaimer ⚠️
+
+- **See DISCLAIMER.md for risk warnings and licensing information.**
+
 Start trading smarter and faster with ApeBot on Fuel. 🚀
