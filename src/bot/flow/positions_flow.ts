@@ -92,7 +92,7 @@ export class PositionsFlow extends Flow {
                     })
                 } catch (e) {
                     console.error(e);
-                    this.deletePosition(position.positionId)
+                    //this.deletePosition(position.positionId)
                 }
             });
         }
@@ -164,11 +164,11 @@ export class PositionsFlow extends Flow {
             throw Error("Position is broken")
         }
 
-        const positionUsdcRate = await this.userDexClient.getRate(positionAssetId, CONTRACTS.ASSET_USDC.bits);
-        const positionBalanceUsdc = remaining * positionUsdcRate;
-
         const positionTradeRate = await this.userDexClient.getRate(positionAssetId, tradeAssetId);
         const positionTradeBalance = remaining * positionTradeRate;
+
+        const positionTradeUsdcRate = await this.userDexClient.getRate(tradeAssetId, CONTRACTS.ASSET_USDC.bits);
+        const positionBalanceUsdc = positionTradeBalance * positionTradeUsdcRate;
 
         const pnl = gained + positionTradeBalance - spent;
 

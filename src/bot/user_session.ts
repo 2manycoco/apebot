@@ -10,7 +10,7 @@ import {Flow} from "./flow/flow";
 import {UserManager} from "./user_manager";
 import {withProgress} from "./help_functions";
 import {IntroduceFlow} from "./flow/introduce_flow";
-import {TRADE_ASSET} from "../fuel/asset/contracts";
+import {CONTRACTS, TRADE_ASSET} from "../fuel/asset/contracts";
 import {replyMenu, replyWalletPK} from "./session_message_builder";
 import dotenv from "dotenv";
 import path from "node:path";
@@ -26,7 +26,7 @@ import {generatePriceMessage} from "../fuel/price_fetcher";
 import {PositionsFlow} from "./flow/positions_flow";
 import {formatMessage, Strings} from "./resources/strings";
 import {AnalyticsEvents} from "../analytics/analytics_events";
-import {LOW_BALANCE_VALUE} from "../fuel/constants";
+import {LOW_BALANCE_ETH_VALUE} from "../fuel/constants";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -57,7 +57,6 @@ export class UserSession {
     }
 
     async handleCommand(command: CommandValues) {
-
         trackUserAnalytics(this.ctx, AnalyticsEvents.UserCommand, {
             command_name: command
         })
@@ -154,7 +153,7 @@ export class UserSession {
 
     private async handleMenuAction(action: ActionValues): Promise<boolean> {
         switch (action) {
-            case Actions.MAIN_BALANCE:
+            case Actions.MAIN_WALLET:
                 await this.showBalance();
                 return true;
             case Actions.MAIN_VIEW_POSITIONS:
@@ -241,6 +240,7 @@ export class UserSession {
     /**
      * Callback to handle the completion of a Flow.
      * @param flowId - The identifier of the completed Flow.
+     * @param successful - Is Flow successful finished
      */
     private async onFlowCompleted(flowId: FlowValues, successful: Boolean) {
         this.activeFlow = null;
@@ -265,20 +265,29 @@ export class UserSession {
     private async showMenu(): Promise<void> {
         await this.cleanActiveFlow()
         const walletAddress = this.wallet.address.toString()
-        let amount: number
+
+        let amountTrade: number
+        let amountEth: number
         let prices: string
         await withProgress(this.ctx, async () => {
             const [responseAmount] = await this.dexClient.getBalance(TRADE_ASSET.bits);
-            amount = responseAmount
+            amountTrade = responseAmount
+
+            const [responseAmountEth] = await this.dexClient.getBalance(CONTRACTS.ASSET_ETH.bits);
+            amountEth = responseAmountEth;
 
             prices = generatePriceMessage()
         })
 
         const balanceWarning =
-            (amount > 0 && amount < LOW_BALANCE_VALUE)
-                ? formatMessage(Strings.WARNING_LOW_BALANCE, LOW_BALANCE_VALUE, TRADE_ASSET.symbol) : undefined
+            (amountEth > 0 && amountEth < LOW_BALANCE_ETH_VALUE)
+                ? formatMessage(Strings.WARNING_LOW_ETH_BALANCE, LOW_BALANCE_ETH_VALUE, CONTRACTS.ASSET_ETH.symbol) : undefined
 
-        await replyMenu(this.ctx, walletAddress, amount, TRADE_ASSET.symbol, prices, balanceWarning)
+        await replyMenu(this.ctx, walletAddress,
+            [[amountTrade, TRADE_ASSET.symbol], [amountEth, CONTRACTS.ASSET_ETH.symbol]],
+            prices,
+            balanceWarning
+        );
     }
 
     private async showBalance(): Promise<void> {

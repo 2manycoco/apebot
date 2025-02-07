@@ -15,6 +15,18 @@ export const CONTRACTS = {
         symbol: "FAIRY",
         bits: "0xc1fdba80b28f51004ede0290e904a59a7dc69d2453706c169630118a80ccde94",
     },
+    ASSET_PSYCHO: {
+        symbol: "PSYCHO",
+        bits: "0xdde96aa16ff27ba4f95adacce9ef4e32302830b29c2e2fa6a552b4562fedffab",
+    },
+    ASSET_APE: {
+        symbol: "APE",
+        bits: "0xa917ed563e47fe60994f758560e8b3b5876c3d6bab73149ce9412d9d5ba91988",
+    },
+    ASSET_FUELUP: {
+        symbol: "TEST",
+        bits: "0xa917ed563e47fe60994f758560e8b3b5876c3d6bab73149ce9412d9d5ba91988",
+    },
 };
 
-export const TRADE_ASSET = CONTRACTS.ASSET_ETH
+export const TRADE_ASSET = CONTRACTS.ASSET_FUEL

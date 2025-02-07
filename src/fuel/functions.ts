@@ -45,8 +45,8 @@ export async function createProvider(): Promise<Provider> {
 }
 
 export async function futureDeadline(provider: Provider) {
-    const block = await provider.getBlock("latest");
-    return block?.height.add(1000) ?? new BN(null);
+    const block = await provider.getBlockNumber();
+    return block.add(1000);
 }
 
 export const isValidFuelAddress = (address: string): boolean => {

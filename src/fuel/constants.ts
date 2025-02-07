@@ -1,4 +1,2 @@
 export const MIN_OPERATION_VALUE = 0.0001
-export const LOW_BALANCE_VALUE = 0.002
-export const LOW_BALANCE_FOR_SWAP_VALUE = 0.001
-export const MIN_RECOMMENDED_BUY_VALUE = 0.0012
+export const LOW_BALANCE_ETH_VALUE = 0.002

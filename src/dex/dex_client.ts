@@ -6,25 +6,22 @@ import {AssetId, BN, Provider, WalletUnlocked} from "fuels";
 import {retry} from "../utils/call_helper";
 import {TokenInfo} from "./model";
 import {getVerifiedAssets} from "../fuel/asset/verified_assets_provider";
-import dotenv from "dotenv";
-import path from "node:path";
 import {MIN_OPERATION_VALUE} from "../fuel/constants";
 import {FuelUpDex} from "./fuelup-fun/fuelup_dex";
 import {shortAddress} from "../bot/help_functions";
-
-dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
 const hideBalanceAmount = new BN(1)
 
 export class DexClient {
     private wallet: WalletUnlocked
-    private dexArray: DexInterface[] = [];
+    private boundedDexArray: DexInterface[] = [];
+    private unboundedDexArray: DexInterface[] = [];
     private static tokenInfoCache: Map<string, TokenInfo> = new Map();
 
-    constructor(provider: Provider, wallet: WalletUnlocked) {
+    constructor(wallet: WalletUnlocked) {
         this.wallet = wallet;
-        this.dexArray.push(new MiraDex(provider, wallet));
-        this.dexArray.push(new FuelUpDex(provider, wallet));
+        this.boundedDexArray.push(new MiraDex(wallet));
+        this.unboundedDexArray.push(new FuelUpDex(wallet));
     }
 
     async getBalance(asset: string): Promise<[number, BN]> {
@@ -78,7 +75,7 @@ export class DexClient {
             return DexClient.tokenInfoCache.get(asset)!;
         }
 
-        for (const dex of this.dexArray) {
+        for (const dex of [...this.unboundedDexArray, ...this.boundedDexArray]) {
             try {
                 const assetId = {bits: asset};
                 const tokenInfo = await dex.getTokenInfo(assetId);
@@ -96,12 +93,14 @@ export class DexClient {
     // Get the rate of `assetIn` in terms of `assetOut`
     // The rate represents the value of `assetIn` relative to `assetOut`
     async getRate(assetIn: string, assetOut: string): Promise<number> {
+        const tokenInfoIn = await this.getTokenInfo(assetIn);
         const assetInId = {bits: assetIn};
         const assetOutId = {bits: assetOut};
 
-        for (const dex of this.dexArray) {
+        const dexArray = tokenInfoIn.isBounded ? this.boundedDexArray : this.unboundedDexArray;
+
+        for (const dex of dexArray) {
             try {
-                // Fetch the rate from the DEX
                 return await dex.getRate(assetInId, assetOutId);
             } catch (error) {
                 console.info(`Failed to fetch rate from DEX: ${error.message}`);
@@ -112,6 +111,7 @@ export class DexClient {
     }
 
     async calculateSwapAmount(assetIn: string, assetOut: string, amount: number): Promise<number> {
+        const tokenInfoIn = await this.getTokenInfo(assetIn);
         const assetInId = {bits: assetIn};
         const assetOutId = {bits: assetOut};
 
@@ -119,7 +119,7 @@ export class DexClient {
         const decimalsOut = tokenInfoOut.decimals;
 
         const amountBN = await this.getTokenAmountBN(assetIn, amount);
-        const result = await this.getBestRate(assetInId, assetOutId, amountBN);
+        const result = await this.getBestRate(assetInId, assetOutId, amountBN, tokenInfoIn.isBounded && tokenInfoOut.isBounded);
 
         const maxAmount = result.maxAmount.toNumber();
 
@@ -127,12 +127,14 @@ export class DexClient {
     }
 
     async swap(assetIn: string, assetOut: string, amount: number, slippage: number): Promise<boolean> {
+        const tokenInfoIn = await this.getTokenInfo(assetIn);
+        const tokenInfoOut = await this.getTokenInfo(assetOut);
         const assetInId = {bits: assetIn};
         const assetOutId = {bits: assetOut};
 
         const amountBN = await this.getTokenAmountBN(assetIn, amount);
 
-        const {bestDex} = await this.getBestRate(assetInId, assetOutId, amountBN);
+        const {bestDex} = await this.getBestRate(assetInId, assetOutId, amountBN, tokenInfoIn.isBounded && tokenInfoOut.isBounded);
 
         const balanceBefore = await this.wallet.getBalance(assetOut);
         try {
@@ -152,12 +154,15 @@ export class DexClient {
     private async getBestRate(
         assetIn: AssetId,
         assetOut: AssetId,
-        amount: BN
+        amount: BN,
+        isBounded: boolean
     ): Promise<{ bestDex: DexInterface; maxAmount: BN }> {
+        const dexArray = isBounded ? this.boundedDexArray : this.unboundedDexArray;
+
         const dexResults = await Promise.all(
-            this.dexArray.map(async (dex) => {
+            dexArray.map(async (dex) => {
                 const swapAmount = await retry(async () => dex.getSwapAmount(assetIn, assetOut, amount));
-                return {dex, swapAmount: swapAmount};
+                return { dex, swapAmount: swapAmount };
             })
         );
 
@@ -175,11 +180,7 @@ export class DexClient {
         const tokenInfo = await this.getTokenInfo(asset);
         const value = parseFloat(amount.toString()) / Math.pow(10, tokenInfo.decimals);
 
-        if (value < MIN_OPERATION_VALUE) {
-            return 0;
-        }
-
-        return value;
+        return value < MIN_OPERATION_VALUE ? 0 : value;
     }
 
     async getTokenAmountBN(asset: string, amount: number): Promise<BN> {

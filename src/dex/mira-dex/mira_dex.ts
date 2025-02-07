@@ -22,21 +22,20 @@ dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
 const MIRA_POOL_TOKEN_SYMBOL = "MIRA-LP"
 const POOL_NOT_FOUND_ERROR = "Pool not found";
+const POOL_NOT_PRESENTED_ERROR = "Pool not present";
 const contractId = process.env.MIRA_CONTRACT_ID;
 
 const scalingFactor = new BN(10000);
 
 export class MiraDex implements DexInterface {
     private readonly wallet: WalletUnlocked;
-    private readonly provider: Provider;
     private readonly miraAmm: MiraAmm;
     private readonly readonlyMiraAmm: ReadonlyMiraAmm;
 
-    constructor(provider: Provider, wallet: WalletUnlocked) {
+    constructor(wallet: WalletUnlocked) {
         this.wallet = wallet;
-        this.provider = provider;
         this.miraAmm = new MiraAmm(wallet, contractId);
-        this.readonlyMiraAmm = new ReadonlyMiraAmm(provider, contractId);
+        this.readonlyMiraAmm = new ReadonlyMiraAmm(wallet.provider, contractId);
     }
 
     async getTokenInfo(assetId: AssetId): Promise<TokenInfo> {
@@ -97,7 +96,7 @@ export class MiraDex implements DexInterface {
                 let retries = 0;
                 const maxRetries = 2;
                 while (true) {
-                    const deadline = await futureDeadline(this.provider);
+                    const deadline = await futureDeadline(this.wallet.provider);
 
                     try {
                         return retry(() => {
@@ -179,9 +178,15 @@ export class MiraDex implements DexInterface {
     }
 
 
-    private createEthRoute(assetIn: AssetId, assetOut: AssetId): PoolId[] {
+    private createETHRoute(assetIn: AssetId, assetOut: AssetId): PoolId[] {
         const poolInEthId = buildPoolId(assetIn, CONTRACTS.ASSET_ETH, false);
         const poolOutEthId = buildPoolId(assetOut, CONTRACTS.ASSET_ETH, false);
+        return [poolInEthId, poolOutEthId]
+    }
+
+    private createUSDCRoute(assetIn: AssetId, assetOut: AssetId): PoolId[] {
+        const poolInEthId = buildPoolId(assetIn, CONTRACTS.ASSET_USDC, false);
+        const poolOutEthId = buildPoolId(assetOut, CONTRACTS.ASSET_USDC, false);
         return [poolInEthId, poolOutEthId]
     }
 
@@ -194,9 +199,14 @@ export class MiraDex implements DexInterface {
         try {
             return await retry(() => fn(directPool));
         } catch (error: any) {
-            if (typeof error.message === "string" && error.message.includes(POOL_NOT_FOUND_ERROR)) {
-                const ethRoute = this.createEthRoute(assetIn, assetOut);
-                return await retry(() => fn(ethRoute));
+            if (typeof error.message === "string") {
+                if (error.message.includes(POOL_NOT_FOUND_ERROR)) {
+                    const ethRoute = this.createETHRoute(assetIn, assetOut);
+                    return await retry(() => fn(ethRoute));
+                } else if (error.message.includes(POOL_NOT_PRESENTED_ERROR)) {
+                    const usdcRoute = this.createUSDCRoute(assetIn, assetOut);
+                    return await retry(() => fn(usdcRoute));
+                }
             }
             throw error;
         }

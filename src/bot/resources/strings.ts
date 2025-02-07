@@ -24,9 +24,10 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
 
 %s
 
-*Balance:* \`%s %s\``,
+*Trade balances:* \n\`%s\``,
+
     MENU_BUTTON_POSITIONS: "📈 Positions",
-    MENU_BUTTON_BALANCE: "💰 Balance",
+    MENU_BUTTON_WALLET: "💰 Wallet",
     MENU_BUTTON_BUY: "💸 BUY",
     MENU_BUTTON_SELL: "💲 SELL",
     MENU_BUTTON_WITHDRAW: "⬆️ Withdraw",
@@ -63,9 +64,12 @@ _\\(This message will auto\\-delete in 30 seconds\\)_
     PERCENT_50: "50%",
     PERCENT_100: "100%",
 
-    AMOUNT_0_002: "0.002 ETH",
-    AMOUNT_0_005: "0.005 ETH",
-    AMOUNT_0_01: "0.01 ETH",
+    AMOUNT_0_002_ETH: "0.002 ETH",
+    AMOUNT_0_005_ETH: "0.005 ETH",
+    AMOUNT_0_01_ETH: "0.01 ETH",
+    AMOUNT_500_FUEL: "500 FUEL",
+    AMOUNT_1000_FUEL: "1000 FUEL",
+    AMOUNT_2000_FUEL: "2000 FUEL",
 
     ABOUT_MESSAGE_TEXT: "📚 Here are some helpful links:",
     ABOUT_BUTTON_DOCS: "📖 Docs & Guides",
@@ -94,20 +98,18 @@ Available: *%s* %s (%s %s)`,
     SWAP_PERCENTAGE_ERROR: "Invalid value. Please enter a number between 1 and 100.",
     SWAP_CONFIRMATION_TEXT: "*%s %s* -> *%s %s*",
     SWAP_SUCCESS: "Transaction completed successfully!",
-    SWAP_TOKEN_SYMBOL_NOT_BOUNDED_ERROR: "*%s* is not bonded and cannot be swapped.",
-    SWAP_TOKEN_NOT_BOUNDED_ERROR: "This token is not bonded and cannot be swapped.",
 
     BUY_ENTER_ASSET: "Please enter the contract address of the token you want to buy:",
     BUY_ENTER_ASSET_ERROR: "Invalid contract address. Please try again.",
     BUY_START_TEXT: `
-Token: *%s* (%s USDC)
-Available: *%s ETH*
+Token: *%s*
+Available: *%s %s*
 
 Enter the amount to spend or choose from the options below:`,
-    BUY_AMOUNT_ERROR: "Invalid amount. Please enter a valid amount of ETH less than your balance.",
-    BUY_CONFIRMATION_TEXT: "*%s ETH* -> *%s %s*.\n%s\nDo you want to proceed?",
+    BUY_AMOUNT_ERROR: "Invalid amount. Please enter a valid amount of FUEL less than your balance.",
+    BUY_CONFIRMATION_TEXT: "*%s FUEL* -> *%s %s*.\nDo you want to proceed?",
     BUY_SUCCESS: "Transaction completed successfully!",
-    BUY_INSUFFICIENT_FUNDS_TEXT: "You have insufficient ETH to make a purchase.",
+    BUY_INSUFFICIENT_FUNDS_TEXT: "You have insufficient FUEL to make a purchase.",
 
     SELL_NO_ASSETS_TEXT: "You don't have any assets available for sale.",
     SELL_START_TEXT_ASSET: "*Available Assets for Sale*\n\n%s\n\nSelect the asset you want to sell:",
@@ -124,7 +126,7 @@ Enter the amount to spend or choose from the options below:`,
     POSITIONS_NO_POSITIONS_TEXT: "You currently have no positions. Start by making a trade!",
     POSITIONS_NO_MORE_POSITIONS_TEXT: "You have no more positions.",
 
-    WARNING_LOW_BALANCE: "_Maintain at least %s %s for proper fee handling_",
+    WARNING_LOW_ETH_BALANCE: "_Maintain at least %s %s for proper fee handling_",
     WARNING_LOW_BALANCE_AFTER_BUY: "*WARNING!* _Your balance will drop below %s %s, risking future selling fees._"
 } as const;
 

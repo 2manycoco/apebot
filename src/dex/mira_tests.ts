@@ -5,7 +5,6 @@ import {retry, setupGlobalHttpClient} from "../utils/call_helper";
 import {startVerifiedAssetsWorker} from "../fuel/asset/verified_assets_provider";
 import {Address, Provider, WalletUnlocked} from "fuels";
 import {DexClient} from "./dex_client";
-import {transferWithFeeAdjustment} from "../fuel/functions";
 
 dotenv.config();
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
@@ -37,7 +36,7 @@ async function testDexClient() {
                 provider = await Provider.create(RPC_URL);
                 wallet = new WalletUnlocked(WALLET_PK, provider);
 
-                return new DexClient(provider, wallet)
+                return new DexClient(wallet)
             },
             10
         );

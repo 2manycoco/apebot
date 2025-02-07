@@ -5,7 +5,7 @@ import {FlowId, FlowValues} from "./flow_ids";
 import {formatMessage, Strings} from "../resources/strings";
 import {formatTokenNumber, withProgress} from "../help_functions";
 import {DexClient} from "../../dex/dex_client";
-import {CONTRACTS} from "../../fuel/asset/contracts";
+import {CONTRACTS, TRADE_ASSET} from "../../fuel/asset/contracts";
 import {replyConfirmMessage} from "../session_message_builder";
 import {getTransactionRepository} from "../../database/transaction_repository";
 import {Transaction} from "../../database/entities";
@@ -15,10 +15,8 @@ export class SellFlow extends Flow {
     private step: "SELECT_ASSET" | "INPUT_PERCENTAGE" | "CONFIRMATION" | "COMPLETED" = "SELECT_ASSET";
     private userDexClient: DexClient;
 
-    private tradeAsset = CONTRACTS.ASSET_ETH;
-
-    private assetsList: Array<{ assetId: string; symbol: string; balance: number; priceInUsdc: string }> = [];
-    private asset: { assetId: string; symbol: string; balance: number; priceInUsdc: string } = null;
+    private assetsList: Array<{ assetId: string; symbol: string; balance: number; priceInTrade: string }> = [];
+    private asset: { assetId: string; symbol: string; balance: number; priceInTrade: string } = null;
     private percentageToSell: number | null = null;
     private amountToSell: number;
     private expectedOutAmount: number;
@@ -51,8 +49,8 @@ export class SellFlow extends Flow {
     private async handleSymbolSelection(): Promise<void> {
         const balances = await this.userDexClient.getBalances();
         const selectedAsset = balances
-            .filter(([assetId, , , isBounded]) => (assetId !== this.tradeAsset.bits && isBounded))
-            .map(([assetId, symbol, amount]) => ({
+            .filter(([assetId, , ,]) => (assetId !== TRADE_ASSET.bits))
+            .map(([assetId, symbol, amount,]) => ({
                 assetId,
                 symbol,
                 balance: parseFloat(amount),
@@ -67,7 +65,7 @@ export class SellFlow extends Flow {
 
         this.asset = {
             ...selectedAsset,
-            priceInUsdc: "?",
+            priceInTrade: "?",
         };
 
         if (this.percentage !== null) {
@@ -87,35 +85,30 @@ export class SellFlow extends Flow {
     private async displayAssetSelection(): Promise<void> {
         const result = await withProgress(this.ctx, async () => {
             const balances = await this.userDexClient.getBalances();
-            const nonEthBalances = balances.filter(([assetId, , , isBounded]) => (assetId !== this.tradeAsset.bits && isBounded));
+            const nonTradeBalances = balances.filter(([assetId, , ,]) => (assetId !== TRADE_ASSET.bits && assetId !== CONTRACTS.ASSET_ETH.bits));
 
-            if (nonEthBalances.length === 0) {
+            if (nonTradeBalances.length === 0) {
                 await this.ctx.reply(Strings.SELL_NO_ASSETS_TEXT, {parse_mode: "Markdown"});
                 this.step = "COMPLETED";
                 return Promise.resolve(false);
             }
 
             this.assetsList = await Promise.all(
-                nonEthBalances.map(async ([assetId, symbol, amount]) => {
+                nonTradeBalances.map(async ([assetId, symbol, amount]) => {
                     const balance = parseFloat(amount);
-                    let priceInUsdc: string | null;
+                    let priceInTrade: string | null;
                     try {
-                        let usdcRate = 0
-                        if (CONTRACTS.ASSET_USDC.bits != assetId) {
-                            usdcRate = await this.userDexClient.getRate(assetId, CONTRACTS.ASSET_USDC.bits);
-                        } else {
-                            usdcRate = 1
-                        }
-                        priceInUsdc = formatTokenNumber(balance * usdcRate);
+                        const rate = await this.userDexClient.getRate(assetId, TRADE_ASSET.bits);
+                        priceInTrade = formatTokenNumber(balance * rate);
                     } catch (e) {
-                        priceInUsdc = "?";
+                        priceInTrade = "?";
                     }
 
                     return {
                         assetId,
                         symbol,
                         balance,
-                        priceInUsdc,
+                        priceInTrade,
                     };
                 })
             );
@@ -123,7 +116,7 @@ export class SellFlow extends Flow {
             const balancesText = this.assetsList
                 .map(
                     (asset) =>
-                        `*${asset.symbol}*: ${formatTokenNumber(asset.balance)} (${asset.priceInUsdc} ${CONTRACTS.ASSET_USDC.symbol})`
+                        `*${asset.symbol}*: ${formatTokenNumber(asset.balance)} (${asset.priceInTrade} ${TRADE_ASSET.symbol})`
                 )
                 .join("\n");
 
@@ -153,7 +146,7 @@ export class SellFlow extends Flow {
         const message = formatMessage(
             Strings.SELL_ENTER_PERCENTAGE,
             this.asset.symbol,
-            this.tradeAsset.symbol
+            TRADE_ASSET.symbol
         );
 
         this.step = "INPUT_PERCENTAGE";
@@ -195,7 +188,7 @@ export class SellFlow extends Flow {
             if (action === Actions.CONFIRM) {
                 await withProgress(this.ctx, async () => {
                     const slippage = await this.userManager.getSlippage();
-                    await this.userDexClient.swap(this.asset.assetId, CONTRACTS.ASSET_ETH.bits, this.amountToSell!, slippage);
+                    await this.userDexClient.swap(this.asset.assetId, TRADE_ASSET.bits, this.amountToSell!, slippage);
                     await this.confirmSell()
                     await this.ctx.reply(Strings.SELL_SUCCESS, {parse_mode: "Markdown"});
                     this.successful = true;
@@ -230,7 +223,7 @@ export class SellFlow extends Flow {
         const message = formatMessage(
             Strings.SELL_ENTER_PERCENTAGE,
             this.asset.symbol,
-            this.tradeAsset.symbol
+            TRADE_ASSET.symbol
         );
 
         this.step = "INPUT_PERCENTAGE";
@@ -269,14 +262,14 @@ export class SellFlow extends Flow {
     private async calculateAndConfirmSell(): Promise<void> {
         const confirmationMessage = await withProgress(this.ctx, async () => {
             this.amountToSell = (this.asset.balance * this.percentageToSell!) / 100;
-            this.expectedOutAmount = await this.userDexClient.calculateSwapAmount(this.asset.assetId, this.tradeAsset.bits, this.amountToSell);
+            this.expectedOutAmount = await this.userDexClient.calculateSwapAmount(this.asset.assetId, TRADE_ASSET.bits, this.amountToSell);
 
             return formatMessage(
                 Strings.SELL_CONFIRMATION_TEXT,
                 formatTokenNumber(this.amountToSell),
                 this.asset.symbol,
                 formatTokenNumber(this.expectedOutAmount),
-                this.tradeAsset.symbol
+                TRADE_ASSET.symbol
             );
         });
 
@@ -292,7 +285,7 @@ export class SellFlow extends Flow {
         transaction.userId = this.userId;
         transaction.assetIdIn = this.asset.assetId;
         transaction.amountIn = this.amountToSell;
-        transaction.assetIdOut = this.tradeAsset.bits;
+        transaction.assetIdOut = TRADE_ASSET.bits;
         transaction.amountOut = this.expectedOutAmount;
         transaction.timestamp = Date.now();
 
@@ -303,7 +296,7 @@ export class SellFlow extends Flow {
     private async updatePosition() {
         const repository = getPositionRepository()
         if (this.percentageToSell == 100) {
-            const position = await repository.findPositionByPair(this.userId, this.tradeAsset.bits, this.asset.assetId)
+            const position = await repository.findPositionByPair(this.userId, TRADE_ASSET.bits, this.asset.assetId)
             if (position != null) {
                 await repository.deletePosition(position.positionId)
             }

@@ -88,7 +88,7 @@ export class SessionManager {
             }
         }
 
-        const dexClient = new DexClient(this.provider, wallet);
+        const dexClient = new DexClient(wallet);
 
         const newSession = new UserSession(ctx, userId, wallet, dexClient);
         this.sessions.set(userId, {session: newSession, lastActivity: new Date()});

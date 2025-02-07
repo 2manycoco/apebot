@@ -11,14 +11,13 @@ import {replyConfirmMessage} from "../session_message_builder";
 import {getTransactionRepository} from "../../database/transaction_repository";
 import {Position, Transaction} from "../../database/entities";
 import {getPositionRepository} from "../../database/position_repository";
-import {LOW_BALANCE_FOR_SWAP_VALUE} from "../../fuel/constants";
 
 export class BuyFlow extends Flow {
     private step: "INPUT_ASSET" | "INPUT_AMOUNT" | "CONFIRMATION" | "COMPLETED" = "INPUT_ASSET";
     private userDexClient: DexClient;
     private assetId: string | null;
 
-    private tradeAsset = CONTRACTS.ASSET_ETH;
+    private tradeAsset = CONTRACTS.ASSET_FUEL;
     private tradeBalance: number;
 
     private amountToSpend: number | null = null;
@@ -58,17 +57,10 @@ export class BuyFlow extends Flow {
         const result = await withProgress(this.ctx, async () => {
             this.tokenInfo = await this.userDexClient.getTokenInfo(this.assetId!);
 
-            if (!this.tokenInfo.isBounded) {
-                await this.ctx.reply(formatMessage(Strings.SWAP_TOKEN_SYMBOL_NOT_BOUNDED_ERROR, this.tokenInfo.symbol),
-                    {parse_mode: "Markdown"});
-                this.step = "COMPLETED";
-                return Promise.resolve(false);
-            }
+            const [tradeBalance] = await this.userDexClient.getBalance(TRADE_ASSET.bits);
+            this.tradeBalance = tradeBalance;
 
-            const [ethBalance] = await this.userDexClient.getBalance(TRADE_ASSET.bits);
-            this.tradeBalance = ethBalance;
-
-            if (ethBalance === 0) {
+            if (tradeBalance === 0) {
                 await this.ctx.reply(Strings.BUY_INSUFFICIENT_FUNDS_TEXT, {parse_mode: "Markdown"});
                 this.step = "COMPLETED";
                 return Promise.resolve(false);
@@ -80,23 +72,11 @@ export class BuyFlow extends Flow {
         if (!result) return;
 
         const message = await withProgress(this.ctx, async () => {
-            let priceUSDC: string
-            if (this.assetId! != CONTRACTS.ASSET_USDC.bits) {
-                const expectedTokenAmountUSDC = await this.userDexClient.calculateSwapAmount(
-                    CONTRACTS.ASSET_USDC.bits,
-                    this.assetId!,
-                    100
-                );
-                priceUSDC = formatTokenNumber(100 / expectedTokenAmountUSDC)
-            } else {
-                priceUSDC = "1"
-            }
-
             return formatMessage(
                 Strings.BUY_START_TEXT,
                 this.tokenInfo.symbol,
-                priceUSDC,
-                this.tradeBalance
+                this.tradeBalance,
+                TRADE_ASSET.symbol
             );
         });
 
@@ -106,9 +86,9 @@ export class BuyFlow extends Flow {
                 parse_mode: "Markdown",
                 ...Markup.inlineKeyboard([
                     [
-                        Markup.button.callback(Strings.AMOUNT_0_002, Actions.AMOUNT_0_002),
-                        Markup.button.callback(Strings.AMOUNT_0_005, Actions.AMOUNT_0_005),
-                        Markup.button.callback(Strings.AMOUNT_0_01, Actions.AMOUNT_0_01),
+                        Markup.button.callback(Strings.AMOUNT_500_FUEL, Actions.AMOUNT_500),
+                        Markup.button.callback(Strings.AMOUNT_1000_FUEL, Actions.AMOUNT_1000),
+                        Markup.button.callback(Strings.AMOUNT_2000_FUEL, Actions.AMOUNT_1500),
                     ],
                 ]),
             });
@@ -145,9 +125,9 @@ export class BuyFlow extends Flow {
     public async handleActionInternal(action: ActionValues): Promise<boolean> {
         if (this.step === "INPUT_AMOUNT") {
             const amountMap = {
-                [Actions.AMOUNT_0_002]: 0.002,
-                [Actions.AMOUNT_0_005]: 0.005,
-                [Actions.AMOUNT_0_01]: 0.01,
+                [Actions.AMOUNT_500]: 500,
+                [Actions.AMOUNT_1000]: 1000,
+                [Actions.AMOUNT_1500]: 1500,
             };
 
             if (amountMap[action] !== undefined) {
@@ -191,18 +171,11 @@ export class BuyFlow extends Flow {
                 this.amountToSpend
             );
 
-            const balanceWarning =
-                (LOW_BALANCE_FOR_SWAP_VALUE > this.tradeBalance - this.amountToSpend) ?
-                    formatMessage(Strings.WARNING_LOW_BALANCE_AFTER_BUY, LOW_BALANCE_FOR_SWAP_VALUE, this.tradeAsset.symbol) : undefined;
-
-            const balanceWarningText = balanceWarning ? `\n${balanceWarning}\n` : ""
-
             return formatMessage(
                 Strings.BUY_CONFIRMATION_TEXT,
                 this.amountToSpend,
                 formatTokenNumber(this.expectedOutAmount),
-                this.tokenInfo.symbol,
-                balanceWarningText
+                this.tokenInfo.symbol
             );
         });
 
