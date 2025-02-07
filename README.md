@@ -35,6 +35,16 @@ ApeBot has been engineered with scalability and future integrations in mind:
 
 ---
 
+## Infrastructure & Growth 🚀
+We are dedicated to expanding and improving our service:
+- **Optimized Performance with PostgreSQL**: ApeBot uses a PostgreSQL database to ensure efficient data storage and rapid execution of transactions.
+- **User-Centric Development with Amplitude Analytics**: We do not collect personal data, but we analyze user experience to implement only the most valuable features.
+- **24/7 Availability on Render Cloud**: Our servers run 24/7 on Render Cloud Platform, ensuring stability and reliability.
+
+ApeBot is designed for long-term growth, with continuous updates and new features in development.
+
+---
+
 ## Fees 💰
 
 Using ApeBot is **completely free**! However, standard Fuel network and DEX fees apply:
@@ -45,10 +55,16 @@ Using ApeBot is **completely free**! However, standard Fuel network and DEX fees
 
 ## Links 🔗
 
+- **[ApeBot](https://t.me/fuel_trade_bot)**: ApeBot on Telegram.
 - **[ApeBot Documentation](https://tricky-coconut.gitbook.io/ape-bot-on-fuel/about-apebot-on-fuel)**: Detailed guide on how to use the bot.
 - **[Telegram Group](https://t.me/apebotfuel)**: Join the discussion and stay updated.
 - **[Twitter](https://x.com/apebotonfuel)**: Follow us for the latest news and updates.
 
 ---
+
+## Disclaimer ⚠️
+
+- **See DISCLAIMER.md for risk warnings and licensing information.**
+
 
 Start trading smarter and faster with ApeBot on Fuel. 🚀
