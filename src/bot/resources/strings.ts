@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
 import path from "node:path";
-import {Markup} from "telegraf";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -98,6 +97,7 @@ Available: *%s* %s (%s %s)`,
     SWAP_PERCENTAGE_ERROR: "Invalid value. Please enter a number between 1 and 100.",
     SWAP_CONFIRMATION_TEXT: "*%s %s* -> *%s %s*",
     SWAP_SUCCESS: "Transaction completed successfully!",
+    SWAP_TOKEN_NOT_AVAILABLE: "Token: *%s*\nThis asset cannot be traded via FUEL",
 
     BUY_ENTER_ASSET: "Please enter the contract address of the token you want to buy:",
     BUY_ENTER_ASSET_ERROR: "Invalid contract address. Please try again.",

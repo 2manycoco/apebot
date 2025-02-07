@@ -4,4 +4,5 @@ export interface TokenInfo {
     symbol: string;
     decimals: number;
     isBounded: boolean;
+    isFuelTrade: boolean;
 }

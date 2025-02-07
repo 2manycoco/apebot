@@ -43,13 +43,13 @@ export class FuelUpDex implements DexInterface {
             if (!isStatusValid) {
                 throw new Error(`Invalid asset status - ${status}`);
             }
-
             return {
                 assetId: data.data.asset_id,
                 name: data.data.asset_name,
                 symbol: data.data.asset_symbol,
                 decimals: 9,
-                isBounded: status == SENT_TO_MIRA_STATUS
+                isBounded: status == SENT_TO_MIRA_STATUS,
+                isFuelTrade: data.data.native_token == CONTRACTS.ASSET_FUEL.symbol
             };
         } catch (error) {
             console.error(`FuelUpDex: Failed to fetch token info for ${assetIdHex}:`, error.message);

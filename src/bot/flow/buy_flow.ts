@@ -57,6 +57,13 @@ export class BuyFlow extends Flow {
         const result = await withProgress(this.ctx, async () => {
             this.tokenInfo = await this.userDexClient.getTokenInfo(this.assetId!);
 
+            if (!this.tokenInfo.isFuelTrade) {
+                await this.ctx.reply(formatMessage(Strings.SWAP_TOKEN_NOT_AVAILABLE, this.tokenInfo.symbol),
+                    {parse_mode: "Markdown"});
+                this.step = "COMPLETED";
+                return Promise.resolve(false);
+            }
+
             const [tradeBalance] = await this.userDexClient.getBalance(TRADE_ASSET.bits);
             this.tradeBalance = tradeBalance;
 

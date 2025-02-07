@@ -63,6 +63,7 @@ export class MiraDex implements DexInterface {
             symbol: symbol?.toString(),
             decimals: assetInfo.decimals || 0,
             isBounded: true,
+            isFuelTrade: true
         };
     }
 

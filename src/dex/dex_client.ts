@@ -68,6 +68,7 @@ export class DexClient {
                 symbol: matchedAsset.symbol,
                 decimals: matchedAsset.decimals,
                 isBounded: true,
+                isFuelTrade: true
             };
         }
 
