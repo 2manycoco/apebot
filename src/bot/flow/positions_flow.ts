@@ -134,7 +134,8 @@ export class PositionsFlow extends Flow {
         return (
             `*${tokenInfoOut.symbol}*\n` +
             `Balance:  ${formatTokenNumber(pnl.balanceTrade)} ${tokenInfoIn.symbol}  _(${formatTokenNumber(pnl.balanceUsdc)}$)_\n\n` +
-            `*PnL:*  ${this.formatPNL(pnl.pnl, pnl.pnlPercentage, tokenInfoIn.symbol)}`
+            `*PnL:*  ${this.formatPNL(pnl.pnl, pnl.pnlPercentage, tokenInfoIn.symbol)}\n\n` +
+            `Choose amount to sell:`
         );
     }
 
