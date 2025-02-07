@@ -54,6 +54,12 @@ export class BuyFlow extends Flow {
     }
 
     private async processAsset(): Promise<void> {
+        if (this.assetId! == TRADE_ASSET.bits) {
+            await this.ctx.reply(formatMessage(Strings.BUY_FUEL_CONTRACT_ENTERED_ERROR, TRADE_ASSET.symbol),
+                {parse_mode: "Markdown"});
+
+            return Promise.resolve();
+        }
         const result = await withProgress(this.ctx, async () => {
             this.tokenInfo = await this.userDexClient.getTokenInfo(this.assetId!);
 

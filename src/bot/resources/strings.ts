@@ -110,6 +110,7 @@ Enter the amount to spend or choose from the options below:`,
     BUY_CONFIRMATION_TEXT: "*%s FUEL* -> *%s %s*.\nDo you want to proceed?",
     BUY_SUCCESS: "Transaction completed successfully!",
     BUY_INSUFFICIENT_FUNDS_TEXT: "You have insufficient FUEL to make a purchase.",
+    BUY_FUEL_CONTRACT_ENTERED_ERROR: "You entered a *%s* contract.\nPlease provide a different asset contract.",
 
     SELL_NO_ASSETS_TEXT: "You don't have any assets available for sale.",
     SELL_START_TEXT_ASSET: "*Available Assets for Sale*\n\n%s\n\nSelect the asset you want to sell:",
