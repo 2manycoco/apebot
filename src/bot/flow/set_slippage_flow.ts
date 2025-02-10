@@ -61,7 +61,7 @@ export class SetSlippageFlow extends Flow {
             await this.ctx.reply(Strings.SET_SLIPPAGE_PERCENTAGE_ERROR, {
                 parse_mode: "Markdown",
             });
-            return false;
+            return true;
         }
 
         this.selectedSlippage = enteredValue;
