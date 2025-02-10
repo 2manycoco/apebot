@@ -36,6 +36,7 @@ ApeBot has been engineered with scalability and future integrations in mind:
 ---
 
 ## Infrastructure & Growth 🚀
+![image](https://github.com/user-attachments/assets/83119c1c-c03d-44ba-8685-7e9556972167)
 We are dedicated to expanding and improving our service:
 - **Optimized Performance with PostgreSQL**: ApeBot uses a PostgreSQL database to ensure efficient data storage and rapid execution of transactions.
 - **User-Centric Development with Amplitude Analytics**: We do not collect personal data, but we analyze user experience to implement only the most valuable features.
