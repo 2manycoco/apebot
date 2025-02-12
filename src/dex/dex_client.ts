@@ -9,6 +9,7 @@ import {getVerifiedAssets} from "../fuel/asset/verified_assets_provider";
 import {MIN_OPERATION_VALUE} from "../fuel/constants";
 import {FuelUpDex} from "./fuelup-fun/fuelup_dex";
 import {shortAddress} from "../bot/help_functions";
+import {DieselDex} from "./diesel-dex/diesel_dex";
 
 const hideBalanceAmount = new BN(1)
 
@@ -17,10 +18,12 @@ export class DexClient {
     private boundedDexArray: DexInterface[] = [];
     private unboundedDexArray: DexInterface[] = [];
     private static tokenInfoCache: Map<string, TokenInfo> = new Map();
+    private static notSupportedAssets: Set<string> = new Set();
 
     constructor(wallet: WalletUnlocked) {
         this.wallet = wallet;
         this.boundedDexArray.push(new MiraDex(wallet));
+        this.boundedDexArray.push(new DieselDex(wallet));
         this.unboundedDexArray.push(new FuelUpDex(wallet));
     }
 
@@ -49,8 +52,9 @@ export class DexClient {
                 }
             } catch (error) {
                 console.info(`Failed to fetch token info for asset ID ${balance.assetId}: ${error.message}`);
-                const readableAmount = parseFloat(balance.amount.toString());
-                balancePairs.push([balance.assetId, shortAddress(balance.assetId, false), readableAmount.toString(), false]);
+                //Unsupported assets
+                /* const readableAmount = parseFloat(balance.amount.toString());
+                 balancePairs.push([balance.assetId, shortAddress(balance.assetId, false), readableAmount.toString(), false]);*/
             }
         }
 
@@ -76,6 +80,11 @@ export class DexClient {
             return DexClient.tokenInfoCache.get(asset)!;
         }
 
+        if (DexClient.notSupportedAssets.has(asset)) {
+            throw new Error(`Token info not found for asset ID: ${asset}`);
+        }
+
+        const errors: string[] = [];
         for (const dex of [...this.unboundedDexArray, ...this.boundedDexArray]) {
             try {
                 const assetId = {bits: asset};
@@ -85,7 +94,14 @@ export class DexClient {
 
             } catch (error) {
                 console.info(`Failed to get token information from DEX: ${error.message}`);
+                errors.push(error.message);
             }
+        }
+
+        const errorTexts = ["Could not retrieve token info", "Token info not found for asset ID"];
+        const allMatch = errors.every(msg => errorTexts.some(text => msg.includes(text)));
+        if (allMatch) {
+            DexClient.notSupportedAssets.add(asset);
         }
 
         throw new Error(`Token information not found for asset ID: ${asset}`);
@@ -163,7 +179,7 @@ export class DexClient {
         const dexResults = await Promise.all(
             dexArray.map(async (dex) => {
                 const swapAmount = await retry(async () => dex.getSwapAmount(assetIn, assetOut, amount));
-                return { dex, swapAmount: swapAmount };
+                return {dex, swapAmount: swapAmount};
             })
         );
 
