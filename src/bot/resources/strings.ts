@@ -75,8 +75,10 @@ _\\(This message will auto\\-delete in 30 seconds\\)_
     ABOUT_BUTTON_COMMUNITY: "💬 Support & Community",
     ABOUT_BUTTON_REPORT: "✍️ Report a Bug // Request a Feature",
 
+    WITHDRAW_SELECT_ASSET_TEXT: "Select the asset you want to withdraw:",
+    WITHDRAW_SELECT_ASSET_ERROR: "Invalid Asset Selected.",
     WITHDRAW_INPUT_TEXT: `
-Balance: %s %s
+Balance: *%s %s*
 Enter your Fuel wallet address to withdraw:`,
     WITHDRAW_INSUFFICIENT_FUNDS_TEXT: "Insufficient funds to withdraw.",
     WITHDRAW_SUCCESS_TEXT: "Funds have been successfully withdrawn.",

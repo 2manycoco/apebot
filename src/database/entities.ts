@@ -25,6 +25,9 @@ export class User {
 
     @Column("decimal", {name: "slippage", default: 1.0})
     slippage: number = 1.0;
+
+    @Column("bool", {name: "notifications_enabled", default: true})
+    isNotificationsEnabled: boolean = true;
 }
 
 @Entity("transactions")

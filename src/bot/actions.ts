@@ -46,11 +46,12 @@ export type ActionValues = typeof Actions[ActionKeys];
 export const TemplateActions = {
     BUY: (symbol: string) => `BUY:${symbol}`,
     SELL: (symbol: string, percentage?: number) => `SELL:${symbol}${percentage !== undefined ? `:${percentage}` : ""}`,
+    WITHDRAW: (symbol: string) => `WITHDRAW:${symbol}`,
     REFRESH: (id: number) => `REFRESH:${id}`,
     HIDE: (id: number) => `HIDE:${id}`,
 
     parse: (action: string): TemplateActionValues | null => {
-        const pattern = /^(BUY|SELL|REFRESH|HIDE):([^:]+)(?::(\d+))?$/;
+        const pattern = /^(BUY|SELL|REFRESH|HIDE|WITHDRAW):([^:]+)(?::(\d+))?$/;
         const match = action.match(pattern);
         if (match) {
             const [_, type, symbolOrId, percentage] = match;
@@ -69,7 +70,7 @@ export const TemplateActions = {
     },
 } as const;
 
-export type TemplateActionKeys = "BUY" | "SELL" | "REFRESH" | "HIDE";
+export type TemplateActionKeys = "BUY" | "SELL" | "REFRESH" | "HIDE" | "WITHDRAW";
 export type TemplateActionValues = {
     type: TemplateActionKeys;
     symbol?: string;

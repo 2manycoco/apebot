@@ -312,7 +312,7 @@ export class UserSession {
     }
 
     private async withdrawFunds(): Promise<void> {
-        await this.startFlow(new WithdrawFlow(this.ctx, this.userId, this.wallet, this.dexClient, TRADE_ASSET.bits, (flowId: FlowValues, successful: Boolean) => {
+        await this.startFlow(new WithdrawFlow(this.ctx, this.userId, this.wallet, this.dexClient, (flowId: FlowValues, successful: Boolean) => {
             this.onFlowCompleted(flowId, successful);
         }));
     }
