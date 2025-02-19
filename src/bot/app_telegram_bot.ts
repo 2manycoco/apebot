@@ -17,7 +17,7 @@ if (!telegramBotToken) {
 }
 
 // Create an instance of Telegraf with the selected token
-const app_telegram_bot = new Telegraf(telegramBotToken);
+export const app_telegram_bot = new Telegraf(telegramBotToken);
 
 // Handle commands
 app_telegram_bot.command(Object.values(Commands), async (ctx) => {

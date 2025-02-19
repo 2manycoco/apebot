@@ -11,7 +11,7 @@ import {UserManager} from "./user_manager";
 import {withProgress} from "./help_functions";
 import {IntroduceFlow} from "./flow/introduce_flow";
 import {CONTRACTS, TRADE_ASSET} from "../fuel/asset/contracts";
-import {replyMenu, replyWalletPK} from "./session_message_builder";
+import {replyMenu, replySettingsMenu, replyWalletPK} from "./session_message_builder";
 import dotenv from "dotenv";
 import path from "node:path";
 import {FlowId, FlowValues} from "./flow/flow_ids";
@@ -27,6 +27,8 @@ import {PositionsFlow} from "./flow/positions_flow";
 import {formatMessage, Strings} from "./resources/strings";
 import {AnalyticsEvents} from "../analytics/analytics_events";
 import {LOW_BALANCE_ETH_VALUE} from "../fuel/constants";
+import {SetAlertsFlow} from "./flow/set_alerts_flow";
+import {SettingsMenuFlow} from "./flow/settings_menu_flow";
 
 dotenv.config({path: path.resolve(__dirname, "../../.env.secret")});
 
@@ -149,6 +151,13 @@ export class UserSession {
             await this.startSell(symbol, percentage)
             return true;
         }
+
+        //Add symbol interceptor
+        /*if (type == "BUY") {
+            await this.cleanActiveFlow()
+            await this.startSell(symbol, percentage)
+            return true;
+        }*/
     }
 
     private async handleMenuAction(action: ActionValues): Promise<boolean> {
@@ -165,8 +174,14 @@ export class UserSession {
             case Actions.MAIN_WITHDRAW_FUNDS:
                 await this.withdrawFunds();
                 return true;
+            case Actions.MAIN_SETTINGS:
+                await this.showSettingsMenu();
+                return true;
             case Actions.MAIN_SLIPPAGE:
                 await this.setSlippage();
+                return true;
+            case Actions.MAIN_ALERTS:
+                await this.setAlerts();
                 return true;
             case Actions.MAIN_BUY:
                 await this.startBuy(null)
@@ -248,12 +263,13 @@ export class UserSession {
             case FlowId.SWAP_FLOW:
             case FlowId.BUY_FLOW:
             case FlowId.SELL_FLOW:
-                if(successful) {
+                if (successful) {
                     await this.showBalance()
                 }
                 return true;
             case FlowId.BALANCE_FLOW:
             case FlowId.POSITIONS_FLOW:
+            case FlowId.SETTINGS_FLOW:
                 return true;
 
         }
@@ -296,6 +312,12 @@ export class UserSession {
         }));
     }
 
+    private async showSettingsMenu(): Promise<void> {
+        return await this.startFlow(new SettingsMenuFlow(this.ctx, this.userId, (flowId: FlowValues, successful: Boolean) => {
+            this.onFlowCompleted(flowId, successful);
+        }));
+    }
+
     private async showWalletPK(): Promise<void> {
         await this.cleanActiveFlow()
 
@@ -319,6 +341,12 @@ export class UserSession {
 
     private async setSlippage(): Promise<void> {
         await this.startFlow(new SetSlippageFlow(this.ctx, this.userId, (flowId: FlowValues, successful: Boolean) => {
+            this.onFlowCompleted(flowId, successful);
+        }));
+    }
+
+    private async setAlerts(): Promise<void> {
+        await this.startFlow(new SetAlertsFlow(this.ctx, this.userId, (flowId: FlowValues, successful: Boolean) => {
             this.onFlowCompleted(flowId, successful);
         }));
     }

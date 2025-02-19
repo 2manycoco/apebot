@@ -6,8 +6,9 @@ export const AnalyticsEvents = {
     UserMessage: "user_message",
     UserMessageUnexpected: "user_message_unexpected",
 
-
-
+    SellSuccessful: "sell_successful",
+    BuySuccessful: "buy_successful",
+    WithdrawSuccessful: "withdraw_successful",
 
 
     ErrorUnknownCommand: "user_command",

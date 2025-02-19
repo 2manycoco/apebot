@@ -23,7 +23,7 @@ export async function replyMenu(ctx: Context, walletAddress: string, amountsAndS
                     Markup.button.callback(Strings.MENU_BUTTON_WALLET, Actions.MAIN_WALLET),
                 ],
                 [
-                    Markup.button.callback(Strings.MENU_BUTTON_SLIPPAGE, Actions.MAIN_SLIPPAGE),
+                    Markup.button.callback(Strings.MENU_BUTTON_SETTINGS, Actions.MAIN_SETTINGS),
                     Markup.button.callback(Strings.MENU_BUTTON_WALLET_PK, Actions.MAIN_WALLET_PK)
                 ],
                 [
@@ -31,6 +31,16 @@ export async function replyMenu(ctx: Context, walletAddress: string, amountsAndS
                 ]
             ]
         ),
+    });
+}
+
+export async function replySettingsMenu(ctx: Context) {
+    return await ctx.reply(Strings.MENU_SETTINGS_TEXT, {
+        parse_mode: "Markdown",
+        ...Markup.inlineKeyboard([
+            [Markup.button.callback(Strings.MENU_BUTTON_SLIPPAGE, Actions.MAIN_SLIPPAGE)],
+            [Markup.button.callback(Strings.MENU_BUTTON_ALERTS, Actions.MAIN_ALERTS)]
+        ])
     });
 }
 
@@ -42,7 +52,7 @@ export async function replyBalance(
 ) {
     const maxSymbolLength = balances.reduce((max, [, symbol]) => Math.max(max, symbol.length), 0);
 
-    balances.sort(([ , symbolA ], [ , symbolB ]) => {
+    balances.sort(([, symbolA], [, symbolB]) => {
         if (symbolA === CONTRACTS.ASSET_FUEL.symbol) return -1;
         if (symbolB === CONTRACTS.ASSET_FUEL.symbol) return 1;
         if (symbolA === CONTRACTS.ASSET_ETH.symbol) return -1;
@@ -59,7 +69,7 @@ export async function replyBalance(
 
     const message = formatMessage(Strings.BALANCE_TEXT, balanceMessage, amountFixed, symbol);
 
-    await ctx.reply(message, { parse_mode: "Markdown" });
+    await ctx.reply(message, {parse_mode: "Markdown"});
 }
 
 export async function replyWalletPK(ctx: Context, walletPK: string) {

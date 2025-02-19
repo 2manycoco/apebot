@@ -25,12 +25,16 @@ Telegram Group: [t.me/apebotfuel](${process.env.TELEGRAM_URL})`,
 
 *Trade balances:* \n\`%s\``,
 
+    MENU_SETTINGS_TEXT: `Choose the settings you want to change?`,
+
     MENU_BUTTON_POSITIONS: "📈 Positions",
     MENU_BUTTON_WALLET: "💰 Wallet",
     MENU_BUTTON_BUY: "💸 BUY",
     MENU_BUTTON_SELL: "💲 SELL",
     MENU_BUTTON_WITHDRAW: "⬆️ Withdraw",
-    MENU_BUTTON_SLIPPAGE: "⚙️ Slippage",
+    MENU_BUTTON_SETTINGS: "⚙️ Settings",
+    MENU_BUTTON_SLIPPAGE: "% Slippage",
+    MENU_BUTTON_ALERTS: "🔔 Alerts",
     MENU_BUTTON_WALLET_PK: "🔑 Wallet PK",
 
     BALANCE_TEXT: `
@@ -49,6 +53,8 @@ _\\(This message will auto\\-delete in 30 seconds\\)_
     BUTTON_ACCEPT: "Accept",
     BUTTON_CONFIRM: "Confirm",
     BUTTON_CONTINUE: "Continue",
+    BUTTON_ENABLE: "Enable",
+    BUTTON_DISABLE: "Disable",
 
     BUTTON_MORE: "Next",
     BUTTON_REFRESH: "Refresh",
@@ -87,7 +93,11 @@ Enter your Fuel wallet address to withdraw:`,
     WITHDRAW_AMOUNT_ERROR: "Insufficient funds for withdrawal",
     WITHDRAW_INPUT_AMOUNT_ERROR: "Invalid input",
 
-    SET_SLIPPAGE_START_TEXT: "Current value: %s%. Choose a slippage percentage or enter your own.",
+    SET_ALERTS_START_TEXT: "Current alerts: *%s*. Choose to toggle notifications or cancel.",
+    SET_ALERTS_ENABLED: "Alerts enabled",
+    SET_ALERTS_DISABLED: "Alerts disabled",
+
+    SET_SLIPPAGE_START_TEXT: "Current value: *%s%*. Choose a slippage percentage or enter your own.",
     SET_SLIPPAGE_PERCENTAGE_ERROR: "Invalid value. Please enter a number between 0 and 75.",
     SET_SLIPPAGE_SUCCESS: "Slippage successfully set to %s%.",
 
@@ -130,7 +140,10 @@ Enter the amount to spend or choose from the options below:`,
     POSITIONS_NO_MORE_POSITIONS_TEXT: "You have no more positions.",
 
     WARNING_LOW_ETH_BALANCE: "_Maintain at least %s %s for proper fee handling_",
-    WARNING_LOW_BALANCE_AFTER_BUY: "*WARNING!* _Your balance will drop below %s %s, risking future selling fees._"
+    WARNING_LOW_BALANCE_AFTER_BUY: "*WARNING!* _Your balance will drop below %s %s, risking future selling fees._",
+
+    ENABLED: "Enabled",
+    DISABLED: "Disabled",
 } as const;
 
 export function formatMessage(template: string, ...args: any[]): string {

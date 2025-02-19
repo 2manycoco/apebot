@@ -10,6 +10,8 @@ import {isValidFuelAddress, transferWithFeeAdjustment} from "../../fuel/function
 import {retry} from "../../utils/call_helper";
 import {TokenInfo} from "../../dex/model";
 import {replyConfirmMessage} from "../session_message_builder";
+import {trackUserAnalytics} from "../user_analytics";
+import {AnalyticsEvents} from "../../analytics/analytics_events";
 
 export class WithdrawFlow extends Flow {
     private userWallet: WalletUnlocked;
@@ -122,6 +124,11 @@ export class WithdrawFlow extends Flow {
 
                     await this.ctx.reply(Strings.WITHDRAW_SUCCESS_TEXT, {parse_mode: "Markdown"});
                     this.step = "COMPLETED";
+
+                    trackUserAnalytics(this.ctx, AnalyticsEvents.WithdrawSuccessful, {
+                        asset: this.assetId,
+                        amount: this.transferAmount,
+                    })
                 });
                 return true;
             }

@@ -10,6 +10,8 @@ import {replyConfirmMessage} from "../session_message_builder";
 import {getTransactionRepository} from "../../database/transaction_repository";
 import {Transaction} from "../../database/entities";
 import {getPositionRepository} from "../../database/position_repository";
+import {trackUserAnalytics} from "../user_analytics";
+import {AnalyticsEvents} from "../../analytics/analytics_events";
 
 export class SellFlow extends Flow {
     private step: "SELECT_ASSET" | "INPUT_PERCENTAGE" | "CONFIRMATION" | "COMPLETED" = "SELECT_ASSET";
@@ -291,6 +293,11 @@ export class SellFlow extends Flow {
 
         await repository.addTransaction(transaction)
         await this.updatePosition()
+
+        trackUserAnalytics(this.ctx, AnalyticsEvents.SellSuccessful, {
+            asset: this.asset.assetId,
+            amount: this.amountToSell,
+        })
     }
 
     private async updatePosition() {

@@ -50,4 +50,25 @@ export class UserManager {
             throw new Error("Failed to save slippage");
         }
     }
+
+    async isNotificationsEnabled(): Promise<boolean> {
+        try {
+            const user = await this.userRepository.getUserById(this.userId);
+            return user.isNotificationsEnabled ?? false;
+        } catch (error) {
+            await this.logger.e("get_notifications_enabled", error.message);
+            throw new Error("Failed to get alerts state");
+        }
+    }
+
+    async saveNotificationsEnabled(enabled: boolean): Promise<void> {
+        try {
+            const user = await this.userRepository.getUserById(this.userId);
+            user.isNotificationsEnabled = enabled;
+            await this.userRepository.saveUser(user);
+        } catch (error) {
+            await this.logger.e("save_notifications_enabled", error.message);
+            throw new Error("Failed to alerts state");
+        }
+    }
 }

@@ -11,6 +11,8 @@ import {replyConfirmMessage} from "../session_message_builder";
 import {getTransactionRepository} from "../../database/transaction_repository";
 import {Position, Transaction} from "../../database/entities";
 import {getPositionRepository} from "../../database/position_repository";
+import {trackUserAnalytics} from "../user_analytics";
+import {AnalyticsEvents} from "../../analytics/analytics_events";
 
 export class BuyFlow extends Flow {
     private step: "INPUT_ASSET" | "INPUT_AMOUNT" | "CONFIRMATION" | "COMPLETED" = "INPUT_ASSET";
@@ -210,6 +212,11 @@ export class BuyFlow extends Flow {
 
         await repository.addTransaction(transaction)
         await this.updatePosition(transaction)
+
+        trackUserAnalytics(this.ctx, AnalyticsEvents.BuySuccessful, {
+            asset: this.tokenInfo.assetId,
+            amount: this.amountToSpend,
+        })
     }
 
     private async updatePosition(transaction: Transaction) {

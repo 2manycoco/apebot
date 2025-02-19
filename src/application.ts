@@ -9,6 +9,7 @@ import AnalyticsService from "./analytics/analytics_service";
 import {sleep} from "fuels";
 import {startVerifiedAssetsWorker} from "./fuel/asset/verified_assets_provider";
 import {CryptoPriceFetcher} from "./fuel/price_fetcher";
+import {LatestAssetNotifier} from "./bot/feature/LatestAssetNotifier";
 
 dotenv.config();
 
@@ -48,6 +49,12 @@ async function application() {
         // Start price fetch
         CryptoPriceFetcher.getInstance()
         console.log("Price fetch successfully.");
+
+        // Start new Asset alerts
+        const notifier = LatestAssetNotifier.getInstance();
+        await notifier.init();
+        notifier.start()
+        console.log("Alerts started successfully.");
 
         // Start Telegram bot
         console.log("Starting the Telegram bot");
