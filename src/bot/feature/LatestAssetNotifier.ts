@@ -59,7 +59,7 @@ export class LatestAssetNotifier {
                             const latestAsset: LatestAsset = LatestAsset.fromJSON(latestAssetResponse);
                             this.currentAssetId = latestAsset.assetId;
                             await this.saveLatestAsset(latestAsset);
-                            //await this.notifyUsers(latestAsset);
+                            await this.notifyUsers(latestAsset);
                         }
                     } else {
                         Logger.getInstance().e("LatestAssetNotifier start()", "Invalid response structure from latest asset API.");
