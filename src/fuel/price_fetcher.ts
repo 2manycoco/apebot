@@ -56,7 +56,7 @@ export class CryptoPriceFetcher {
     private startAutoUpdate(): void {
         this.updateInterval = setInterval(async () => {
             await this.fetchPrices();
-        }, 30000);
+        }, 60 * 1000);
 
         this.fetchPrices().catch((error) => console.error("Initial fetch error:", error.message));
     }

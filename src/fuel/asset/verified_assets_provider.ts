@@ -69,5 +69,5 @@ export async function startVerifiedAssetsWorker() {
     await updateVerifiedAssetsCache();
     setInterval(() => {
         updateVerifiedAssetsCache();
-    }, 30 * 60 * 1000); // 30 mins
+    }, 24 * 60 * 60 * 1000);
 }
