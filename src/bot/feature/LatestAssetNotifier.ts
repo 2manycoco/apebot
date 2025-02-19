@@ -49,7 +49,7 @@ export class LatestAssetNotifier {
         this.pollInterval = setInterval(async () => {
             try {
                 const url = `${process.env.FUELUP_API_URL}trade/latestCreatedAsset?network=main_net`;
-                const response = await retry(async () => axios.get(url), 10);
+                const response = await retry(async () => axios.get(url), 3);
 
                 if (response.data.success) {
                     if (response.data && response.data.data && response.data.data.latest_asset) {
