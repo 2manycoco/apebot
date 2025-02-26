@@ -68,7 +68,7 @@ export class LatestAssetNotifier {
             } catch (error: any) {
                 Logger.getInstance().e("LatestAssetNotifier start()", error.message);
             }
-        }, 3000);
+        }, 10000);
     }
 
     private async saveLatestAsset(asset: LatestAsset): Promise<void> {

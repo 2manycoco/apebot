@@ -11,7 +11,7 @@ interface CryptoPrice {
 export class CryptoPriceFetcher {
     private static instance: CryptoPriceFetcher;
     private readonly apiUrl = "https://api.coingecko.com/api/v3/simple/price";
-    private readonly assets = ["ethereum", "fuel-network"]; // Используем корректные идентификаторы
+    private readonly assets = ["ethereum", "fuel-network"];
     private readonly currency = "usd";
     private prices: Record<string, CryptoPrice> = {};
     private updateInterval: NodeJS.Timeout | null = null;
